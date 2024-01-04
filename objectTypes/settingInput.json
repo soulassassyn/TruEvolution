@@ -1,0 +1,16 @@
+{
+	"name": "settingInput",
+	"plugin-id": "TextBox",
+	"sid": 622241280646396,
+	"isGlobal": false,
+	"instanceVariables": [
+		{
+			"name": "setting",
+			"type": "string",
+			"desc": "",
+			"show": true,
+			"sid": 238328398811412
+		}
+	],
+	"behaviorTypes": []
+}

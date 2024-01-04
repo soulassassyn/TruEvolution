@@ -1,0 +1,17 @@
+{
+	"name": "attractionText",
+	"plugin-id": "Text",
+	"sid": 400299496700247,
+	"isGlobal": false,
+	"instanceVariables": [
+		{
+			"name": "index",
+			"type": "number",
+			"desc": "",
+			"show": true,
+			"sid": 122754663583955
+		}
+	],
+	"behaviorTypes": [],
+	"effectTypes": []
+}

@@ -1,0 +1,16 @@
+{
+	"name": "numberInput",
+	"plugin-id": "TextBox",
+	"sid": 234138031365718,
+	"isGlobal": false,
+	"instanceVariables": [
+		{
+			"name": "color",
+			"type": "string",
+			"desc": "",
+			"show": true,
+			"sid": 126014979616291
+		}
+	],
+	"behaviorTypes": []
+}

@@ -1,0 +1,16 @@
+{
+	"name": "attractionSlider",
+	"plugin-id": "sliderbar",
+	"sid": 841252533327990,
+	"isGlobal": false,
+	"instanceVariables": [
+		{
+			"name": "index",
+			"type": "number",
+			"desc": "",
+			"show": true,
+			"sid": 601762931015731
+		}
+	],
+	"behaviorTypes": []
+}

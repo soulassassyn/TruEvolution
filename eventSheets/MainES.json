@@ -1,0 +1,252 @@
+{
+	"name": "MainES",
+	"events": [
+		{
+			"eventType": "block",
+			"conditions": [
+				{
+					"id": "on-start-of-layout",
+					"objectClass": "System",
+					"sid": 467209616824421
+				}
+			],
+			"actions": [
+				{
+					"id": "set-layer-visible",
+					"objectClass": "System",
+					"sid": 967094064914476,
+					"parameters": {
+						"layer": "\"options\"",
+						"visibility": "visible"
+					}
+				},
+				{
+					"id": "set-layer-interactive",
+					"objectClass": "System",
+					"sid": 336870924714272,
+					"parameters": {
+						"layer": "\"options\"",
+						"interactive": true
+					}
+				}
+			],
+			"sid": 696358293211155
+		},
+		{
+			"eventType": "block",
+			"conditions": [
+				{
+					"id": "on-key-released",
+					"objectClass": "Keyboard",
+					"sid": 823896282586934,
+					"parameters": {
+						"key": 192
+					}
+				}
+			],
+			"actions": [
+				{
+					"callFunction": "toggleLayer",
+					"sid": 886260223269266,
+					"parameters": [
+						"\"options\""
+					]
+				},
+				{
+					"type": "script",
+					"script": "runtime.Rules.resetSimulation();"
+				},
+				{
+					"callFunction": "removeParticles",
+					"sid": 533525187473488
+				}
+			],
+			"sid": 639281252059746
+		},
+		{
+			"eventType": "block",
+			"conditions": [
+				{
+					"id": "on-double-tap",
+					"objectClass": "Touch",
+					"sid": 251644137771640
+				}
+			],
+			"actions": [
+				{
+					"callFunction": "toggleLayer",
+					"sid": 992920208219138,
+					"parameters": [
+						"\"options\""
+					]
+				},
+				{
+					"type": "script",
+					"script": "runtime.Rules.resetSimulation();"
+				},
+				{
+					"callFunction": "removeParticles",
+					"sid": 197508370698696
+				}
+			],
+			"sid": 197335693250745
+		},
+		{
+			"eventType": "block",
+			"conditions": [
+				{
+					"id": "on-clicked",
+					"objectClass": "startButton",
+					"sid": 912764211678921
+				}
+			],
+			"actions": [
+				{
+					"callFunction": "toggleLayer",
+					"sid": 116782807732671,
+					"parameters": [
+						"\"options\""
+					]
+				},
+				{
+					"type": "script",
+					"script": "runtime.Rules.startSimulation();"
+				}
+			],
+			"sid": 775424476677989
+		},
+		{
+			"functionName": "toggleLayer",
+			"functionDescription": "",
+			"functionCategory": "",
+			"functionReturnType": "none",
+			"functionCopyPicked": false,
+			"functionIsAsync": false,
+			"functionParameters": [
+				{
+					"name": "layerName",
+					"type": "string",
+					"initialValue": "",
+					"comment": "",
+					"sid": 961213221151394
+				}
+			],
+			"eventType": "function-block",
+			"conditions": [],
+			"actions": [],
+			"sid": 735687374955312,
+			"children": [
+				{
+					"eventType": "block",
+					"conditions": [
+						{
+							"id": "layer-is-visible",
+							"objectClass": "System",
+							"sid": 131413271182509,
+							"parameters": {
+								"layer": "layerName"
+							}
+						}
+					],
+					"actions": [
+						{
+							"id": "set-layer-visible",
+							"objectClass": "System",
+							"sid": 458588057533667,
+							"parameters": {
+								"layer": "\"options\"",
+								"visibility": "invisible"
+							}
+						},
+						{
+							"id": "set-layer-interactive",
+							"objectClass": "System",
+							"sid": 960984223296331,
+							"parameters": {
+								"layer": "\"options\"",
+								"interactive": false
+							}
+						},
+						{
+							"type": "script",
+							"script": "runtime.Rules.isSimulating = true;"
+						}
+					],
+					"sid": 717514758927853
+				},
+				{
+					"eventType": "block",
+					"conditions": [
+						{
+							"id": "else",
+							"objectClass": "System",
+							"sid": 241085059427087
+						}
+					],
+					"actions": [
+						{
+							"id": "set-layer-visible",
+							"objectClass": "System",
+							"sid": 460482621397868,
+							"parameters": {
+								"layer": "\"options\"",
+								"visibility": "visible"
+							}
+						},
+						{
+							"id": "set-layer-interactive",
+							"objectClass": "System",
+							"sid": 148980347247242,
+							"parameters": {
+								"layer": "\"options\"",
+								"interactive": true
+							}
+						},
+						{
+							"type": "script",
+							"script": "runtime.Rules.isSimulating = false;"
+						}
+					],
+					"sid": 981227789784159
+				}
+			]
+		},
+		{
+			"functionName": "removeParticles",
+			"functionDescription": "",
+			"functionCategory": "",
+			"functionReturnType": "none",
+			"functionCopyPicked": false,
+			"functionIsAsync": false,
+			"functionParameters": [],
+			"eventType": "function-block",
+			"conditions": [],
+			"actions": [],
+			"sid": 921368420303363,
+			"children": [
+				{
+					"eventType": "block",
+					"conditions": [
+						{
+							"id": "for-each",
+							"objectClass": "System",
+							"sid": 518465848175029,
+							"parameters": {
+								"object": "particle"
+							}
+						}
+					],
+					"actions": [
+						{
+							"id": "destroy",
+							"objectClass": "particle",
+							"sid": 945259202413134
+						}
+					],
+					"sid": 750103664635322
+				}
+			]
+		}
+	],
+	"sid": 963435812412227
+}
