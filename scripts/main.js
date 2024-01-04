@@ -36,8 +36,9 @@ function Tick(runtime)
 		sliderValueUpdate(runtime);
 		sliderEnabledUpdate(runtime);
 		settingParametersUpdate(runtime);
+	} else {
+		runtime.Rules.update();
 	}
-	runtime.Rules.update();
 }
 
 function createSliders(runtime) {

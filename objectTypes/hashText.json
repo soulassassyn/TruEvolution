@@ -1,0 +1,16 @@
+{
+	"name": "hashText",
+	"plugin-id": "TextBox",
+	"sid": 732223368664009,
+	"isGlobal": false,
+	"instanceVariables": [
+		{
+			"name": "setting",
+			"type": "string",
+			"desc": "",
+			"show": true,
+			"sid": 555758642200107
+		}
+	],
+	"behaviorTypes": []
+}

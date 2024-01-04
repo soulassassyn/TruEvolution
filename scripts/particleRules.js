@@ -91,7 +91,7 @@ export class Rules {
         return Math.random() * number;
     }
 
-    // logic for simulation, p1 and p2 are the groups of particles, g is the gravity constant
+    // logic for simulation, p1 and p2 are arrays of particles, g is the gravity constant
     rule(p1, p2, g) {    
         for (let i = 0; i < p1.length; i++) {
             let fx = 0; // force in x direction
@@ -138,5 +138,39 @@ export class Rules {
         this.isSimulating = false;
         this.particles = {};
         this.createdColors = {};
+    }
+
+    // Function to create a hash string from your variables
+    createHash(createdColors, ruleSet, interactionDistance, friction) {
+        // Create an object with all the data
+        const data = {
+            createdColors,
+            ruleSet,
+            interactionDistance,
+            friction
+        };
+
+        // Convert the object into a JSON string
+        const jsonString = JSON.stringify(data);
+
+        // Encode the JSON string into Base64 for easy sharing
+        const encoded = btoa(jsonString);
+
+        return encoded;
+    }
+
+    // Function to decode the hash string back into your variables
+    loadFromHash(hashString) {
+        // Decode the Base64 string into a JSON string
+        const decoded = atob(hashString);
+
+        // Parse the JSON string back into an object
+        const data = JSON.parse(decoded);
+
+        // Here you would set your variables from the data object
+        this.createdColors = data.createdColors;
+        this.ruleSet = data.ruleSet;
+        this.interactionDistance = data.interactionDistance;
+        this.friction = data.friction;
     }
 }
