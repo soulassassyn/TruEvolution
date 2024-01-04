@@ -1,0 +1,37 @@
+.button {
+    background-color: #4890fd; /* Blue background */
+    color: white;             /* White text */
+    border: none;             /* Remove default border */
+    padding: 2px 2px;       /* Add some padding */
+    text-align: center;       /* Center the text */
+    display: inline-block;    /* Allows setting width and height */
+    font-size: 16px;          /* Set font size */
+    cursor: pointer;          /* Change mouse cursor on hover */
+    border-radius: 5px;       /* Optional: rounds corners */
+}
+
+/* Optional: change the style when the user hovers over the button */
+.button:hover {
+    background-color: #3a78d4; /* Slightly darker blue on hover */
+}
+
+/* Styling the slider track */
+input[type=range]::-webkit-slider-runnable-track {
+	-webkit-appearance: none;
+	appearance: none;
+    background: linear-gradient(to right, #FFA07A, #FFFFE0); /* Gradient track */
+    border-radius: 10px;
+}
+
+input[type=range]:disabled::-webkit-slider-runnable-track {
+    background: #cccccc; /* Grayed out color for the disabled track */
+}
+
+/* Styling the slider thumb */
+input[type=range]::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	height: 20px;
+    background: #fff; /* White thumb */
+    border: 2px solid #8e44ad; /* Border around the thumb */
+}

@@ -3,6 +3,7 @@ export class Rules {
         this.runtime = runtime;
         this.layer = "interactive"
         this.isSimulating = false;
+        this.isLoading = false;
         this.particles = {};
         this.colorValues = {
             blue: 0.1,
@@ -37,7 +38,6 @@ export class Rules {
                 yellow: 0,
             },
         }
-
 
         this.interactionDistance = 150,
         this.friction = 0.5,
@@ -119,11 +119,11 @@ export class Rules {
     
             // bounce off walls by ensuring particles are within bounds
             if (a.x <= 0 || a.x >= this.vwidth) {
-                a.x = Math.max(0, Math.min(a.x, this.vwidth)); // constrain between 0 and vwidth
+                a.x = Math.max(1, Math.min(a.x, this.vwidth - 1)); // constrain between 0 and vwidth
                 a.vx *= -1;
             }
             if (a.y <= 0 || a.y >= this.vheight) {
-                a.y = Math.max(0, Math.min(a.y, this.vheight)); // constrain between 0 and vheight
+                a.y = Math.max(1, Math.min(a.y, this.vheight - 1)); // constrain between 0 and vheight
                 a.vy *= -1;
             }
         }
@@ -140,8 +140,49 @@ export class Rules {
         this.createdColors = {};
     }
 
+    setSeedText() {
+        const seedText = this.runtime.objects.seedText.getFirstInstance();
+        const seed = this.runtime.Rules.createHash();
+    
+        seedText.text = seed;
+    }
+
+    randomizeSettings() {
+        this.isLoading = true;
+
+        // Randomize the ruleSet and createdColors
+        for (let color in this.ruleSet) {
+            let isColorActive = Math.random() > 0.1; // 90% chance of being active
+            // If the color is not active, set all the values to 0 and delete the color from createdColors
+            if (!isColorActive) {
+                for (let affectingColor in this.ruleSet[color]) {
+                    this.ruleSet[color][affectingColor] = 0;
+                    delete this.createdColors[color];
+                }
+            } else {
+                const numberOfParticles = Math.floor(this.randomRange(50, 250));
+                this.createdColors[color] = numberOfParticles;
+                for (let affectingColor in this.ruleSet[color]) {
+                    this.ruleSet[color][affectingColor] = parseFloat(this.randomRange(-2, 2).toFixed(1));
+                }
+            }
+        }
+
+        this.friction = parseFloat(this.randomRange(0.1, 1).toFixed(1));
+        this.interactionDistance = Math.floor(this.randomRange(100, 650));
+        this.updateInteractionDistanceSquared();
+    }
+
+    randomRange(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
     // Function to create a hash string from your variables
-    createHash(createdColors, ruleSet, interactionDistance, friction) {
+    createHash() {
+        const createdColors = this.createdColors;
+        const ruleSet = this.ruleSet;
+        const interactionDistance = this.interactionDistance;
+        const friction = this.friction;
         // Create an object with all the data
         const data = {
             createdColors,
@@ -161,6 +202,7 @@ export class Rules {
 
     // Function to decode the hash string back into your variables
     loadFromHash(hashString) {
+        this.isLoading = true;
         // Decode the Base64 string into a JSON string
         const decoded = atob(hashString);
 
@@ -172,5 +214,9 @@ export class Rules {
         this.ruleSet = data.ruleSet;
         this.interactionDistance = data.interactionDistance;
         this.friction = data.friction;
+    }
+
+    updateInteractionDistanceSquared() {
+        this.interactionDistanceSquared = this.interactionDistance * this.interactionDistance;
     }
 }

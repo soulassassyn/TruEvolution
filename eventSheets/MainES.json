@@ -28,6 +28,14 @@
 						"layer": "\"options\"",
 						"interactive": true
 					}
+				},
+				{
+					"id": "load-stylesheet",
+					"objectClass": "Browser",
+					"sid": 916918271214960,
+					"parameters": {
+						"url": "\"customStyle.css\""
+					}
 				}
 			],
 			"sid": 696358293211155
@@ -90,6 +98,112 @@
 				}
 			],
 			"sid": 197335693250745
+		},
+		{
+			"eventType": "block",
+			"conditions": [
+				{
+					"id": "on-clicked",
+					"objectClass": "randomizeButton",
+					"sid": 147963027829948
+				}
+			],
+			"actions": [
+				{
+					"type": "script",
+					"script": "runtime.Rules.randomizeSettings();"
+				}
+			],
+			"sid": 664434657069187
+		},
+		{
+			"eventType": "block",
+			"conditions": [
+				{
+					"id": "on-clicked",
+					"objectClass": "generateButton",
+					"sid": 962131820101022
+				}
+			],
+			"actions": [
+				{
+					"type": "script",
+					"script": "runtime.Rules.setSeedText();"
+				}
+			],
+			"sid": 217826765614761
+		},
+		{
+			"eventType": "block",
+			"conditions": [
+				{
+					"id": "on-clicked",
+					"objectClass": "copyButton",
+					"sid": 118537911397630
+				}
+			],
+			"actions": [],
+			"sid": 956085827752554,
+			"children": [
+				{
+					"eventType": "block",
+					"conditions": [
+						{
+							"id": "pick-all",
+							"objectClass": "System",
+							"sid": 452813231830164,
+							"parameters": {
+								"object": "seedText"
+							}
+						}
+					],
+					"actions": [
+						{
+							"id": "copy-text",
+							"objectClass": "Clipboard",
+							"sid": 918690115090171,
+							"parameters": {
+								"text": "seedText.Text"
+							}
+						}
+					],
+					"sid": 492059441042090
+				}
+			]
+		},
+		{
+			"eventType": "block",
+			"conditions": [
+				{
+					"id": "on-clicked",
+					"objectClass": "loadButton",
+					"sid": 134047255996893
+				}
+			],
+			"actions": [],
+			"sid": 764861352886214,
+			"children": [
+				{
+					"eventType": "block",
+					"conditions": [
+						{
+							"id": "pick-all",
+							"objectClass": "System",
+							"sid": 496465376304989,
+							"parameters": {
+								"object": "seedText"
+							}
+						}
+					],
+					"actions": [
+						{
+							"type": "script",
+							"script": "const seedText = runtime.objects.seedText.getFirstPickedInstance();\nruntime.Rules.loadFromHash(seedText.text);"
+						}
+					],
+					"sid": 977783953391986
+				}
+			]
 		},
 		{
 			"eventType": "block",

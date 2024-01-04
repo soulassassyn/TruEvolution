@@ -30,14 +30,19 @@ function Tick(runtime)
 	const FPSText = runtime.objects.FPSText.getFirstInstance();
 	FPSText.text = String(runtime.fps);
 
-	if (!runtime.Rules.isSimulating) {
+	if (!runtime.Rules.isSimulating && !runtime.Rules.isLoading) {
 		protectNumberInput(runtime);
 		protectFrictionInput(runtime)
 		sliderValueUpdate(runtime);
 		sliderEnabledUpdate(runtime);
 		settingParametersUpdate(runtime);
-	} else {
+	} else if (runtime.Rules.isSimulating) {
 		runtime.Rules.update();
+	} else if (runtime.Rules.isLoading) {
+		loadNumberInputValues(runtime);
+		loadSliderValues(runtime);
+		loadSettingValues(runtime);
+		runtime.Rules.isLoading = false;
 	}
 }
 
@@ -102,7 +107,6 @@ function protectNumberInput(runtime) {
 
 	numberInput.forEach((input) => {
 		const number = Number(input.text);
-		console.log(number);
 		if (number < 0) {
 			input.text = "0";
 		}
@@ -138,8 +142,7 @@ function sliderEnabledUpdate(runtime) {
 	numberInput.forEach((input) => {
 		const color = input.instVars.color;
 		let number = Number(input.text);
-
-		if (number != 0) {
+		if (number != 0 && !isNaN(number)) {
 			colors.push(color);
 			createdColors[color] = number;
 		} else {
@@ -161,11 +164,48 @@ function sliderEnabledUpdate(runtime) {
 
 function settingParametersUpdate(runtime) {
 	const settingInput = runtime.objects.settingInput.getAllInstances();
-
+	
 	settingInput.forEach((input) => {
 		const setting = input.instVars.setting;
 		const value = Number(input.text);
-
+		
 		runtime.Rules[setting] = value;
+	});
+	runtime.Rules.updateInteractionDistanceSquared();
+}
+
+// Load functions
+function loadNumberInputValues(runtime) {
+	const numberInput = runtime.objects.numberInput.getAllInstances();
+
+	numberInput.forEach((input) => {
+		const color = input.instVars.color;
+		const value = runtime.Rules.createdColors[color];
+
+		input.text = String(value);
+	});
+}
+
+function loadSliderValues(runtime) {
+	const sliders = runtime.objects.attractionSlider.getAllInstances();
+	const ruleSet = runtime.Rules.ruleSet;
+
+	sliders.forEach((slider) => {
+		const color = slider.color;
+		const subColor = slider.subColor;
+		const value = ruleSet[color][subColor];
+
+		slider.value = value;
+	});
+}
+
+function loadSettingValues(runtime) {
+	const settingInput = runtime.objects.settingInput.getAllInstances();
+
+	settingInput.forEach((input) => {
+		const setting = input.instVars.setting;
+		const value = runtime.Rules[setting];
+
+		input.text = String(value);
 	});
 }

@@ -100,7 +100,7 @@
 						"initially-visible": true,
 						"enabled": true,
 						"id": "",
-						"class": ""
+						"class": "slider"
 					},
 					"uid": 6,
 					"instanceVariables": {

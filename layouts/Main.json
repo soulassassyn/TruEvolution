@@ -245,8 +245,8 @@
 				{
 					"type": "numberInput",
 					"properties": {
-						"text": "0",
-						"placeholder": "",
+						"text": "",
+						"placeholder": "0",
 						"tooltip": "",
 						"initially-visible": true,
 						"enabled": true,
@@ -288,14 +288,14 @@
 						"auto-font-size": true,
 						"checked": false,
 						"id": "",
-						"class": ""
+						"class": "button"
 					},
 					"uid": 26,
 					"instanceVariables": {},
 					"behaviors": {},
 					"world": {
-						"x": 695.6022487671906,
-						"y": 750.567020132522,
+						"x": 695,
+						"y": 750,
 						"width": 72,
 						"height": 24,
 						"originX": 0,
@@ -487,8 +487,8 @@
 				{
 					"type": "numberInput",
 					"properties": {
-						"text": "0",
-						"placeholder": "",
+						"text": "",
+						"placeholder": "0",
 						"tooltip": "",
 						"initially-visible": true,
 						"enabled": true,
@@ -522,8 +522,8 @@
 				{
 					"type": "numberInput",
 					"properties": {
-						"text": "0",
-						"placeholder": "",
+						"text": "",
+						"placeholder": "0",
 						"tooltip": "",
 						"initially-visible": true,
 						"enabled": true,
@@ -557,8 +557,8 @@
 				{
 					"type": "numberInput",
 					"properties": {
-						"text": "0",
-						"placeholder": "",
+						"text": "",
+						"placeholder": "0",
 						"tooltip": "",
 						"initially-visible": true,
 						"enabled": true,
@@ -610,7 +610,7 @@
 					},
 					"behaviors": {},
 					"world": {
-						"x": 300,
+						"x": 250,
 						"y": 25,
 						"width": 79.89143513674472,
 						"height": 22,
@@ -652,7 +652,7 @@
 					"instanceVariables": {},
 					"behaviors": {},
 					"world": {
-						"x": 385,
+						"x": 335,
 						"y": 25,
 						"width": 97.40087669726512,
 						"height": 21.772726,
@@ -696,7 +696,7 @@
 					"instanceVariables": {},
 					"behaviors": {},
 					"world": {
-						"x": 385,
+						"x": 335,
 						"y": 50,
 						"width": 122.89134211409367,
 						"height": 21.772726058838032,
@@ -733,7 +733,7 @@
 					},
 					"behaviors": {},
 					"world": {
-						"x": 300.01740648097814,
+						"x": 250.01740648097814,
 						"y": 50.576506933335196,
 						"width": 79.89143513674472,
 						"height": 22,
@@ -924,10 +924,10 @@
 					}
 				},
 				{
-					"type": "hashText",
+					"type": "seedText",
 					"properties": {
-						"text": "150",
-						"placeholder": "",
+						"text": "",
+						"placeholder": "Seed",
 						"tooltip": "",
 						"initially-visible": true,
 						"enabled": true,
@@ -940,14 +940,138 @@
 					},
 					"uid": 31,
 					"instanceVariables": {
-						"setting": "interactionDistance"
+						"setting": ""
 					},
 					"behaviors": {},
 					"world": {
-						"x": 508.8476867675781,
-						"y": 421.4296569824219,
-						"width": 79.89143513674472,
+						"x": 520,
+						"y": 25,
+						"width": 247.91274515655212,
 						"height": 22,
+						"originX": 0,
+						"originY": 0,
+						"color": [
+							1,
+							1,
+							1,
+							1
+						]
+					}
+				},
+				{
+					"type": "loadButton",
+					"properties": {
+						"type": "button",
+						"text": "Load",
+						"tooltip": "",
+						"initially-visible": true,
+						"enabled": true,
+						"auto-font-size": true,
+						"checked": false,
+						"id": "",
+						"class": "button"
+					},
+					"uid": 32,
+					"instanceVariables": {},
+					"behaviors": {},
+					"world": {
+						"x": 696,
+						"y": 55,
+						"width": 72,
+						"height": 24,
+						"originX": 0,
+						"originY": 0,
+						"color": [
+							1,
+							1,
+							1,
+							1
+						]
+					}
+				},
+				{
+					"type": "randomizeButton",
+					"properties": {
+						"type": "button",
+						"text": "Randomize",
+						"tooltip": "",
+						"initially-visible": true,
+						"enabled": true,
+						"auto-font-size": true,
+						"checked": false,
+						"id": "",
+						"class": "button"
+					},
+					"uid": 33,
+					"instanceVariables": {},
+					"behaviors": {},
+					"world": {
+						"x": 530,
+						"y": 750,
+						"width": 88.1191175466156,
+						"height": 24,
+						"originX": 0,
+						"originY": 0,
+						"color": [
+							1,
+							1,
+							1,
+							1
+						]
+					}
+				},
+				{
+					"type": "copyButton",
+					"properties": {
+						"type": "button",
+						"text": "Copy",
+						"tooltip": "",
+						"initially-visible": true,
+						"enabled": true,
+						"auto-font-size": true,
+						"checked": false,
+						"id": "",
+						"class": "button"
+					},
+					"uid": 34,
+					"instanceVariables": {},
+					"behaviors": {},
+					"world": {
+						"x": 608,
+						"y": 55,
+						"width": 72,
+						"height": 24,
+						"originX": 0,
+						"originY": 0,
+						"color": [
+							1,
+							1,
+							1,
+							1
+						]
+					}
+				},
+				{
+					"type": "generateButton",
+					"properties": {
+						"type": "button",
+						"text": "Generate",
+						"tooltip": "",
+						"initially-visible": true,
+						"enabled": true,
+						"auto-font-size": true,
+						"checked": false,
+						"id": "",
+						"class": "button"
+					},
+					"uid": 36,
+					"instanceVariables": {},
+					"behaviors": {},
+					"world": {
+						"x": 520,
+						"y": 55,
+						"width": 72,
+						"height": 24,
 						"originX": 0,
 						"originY": 0,
 						"color": [

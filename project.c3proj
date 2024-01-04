@@ -8,8 +8,22 @@
 	"usedAddons": [
 		{
 			"type": "plugin",
+			"id": "Browser",
+			"name": "Browser",
+			"author": "Scirra",
+			"bundled": false
+		},
+		{
+			"type": "plugin",
 			"id": "Button",
 			"name": "Button",
+			"author": "Scirra",
+			"bundled": false
+		},
+		{
+			"type": "plugin",
+			"id": "Clipboard",
+			"name": "Clipboard",
 			"author": "Scirra",
 			"bundled": false
 		},
@@ -97,7 +111,13 @@
 			"settingInput",
 			"numberInput3",
 			"staticTitles3",
-			"hashText"
+			"seedText",
+			"loadButton",
+			"randomizeButton",
+			"copyButton",
+			"Clipboard",
+			"generateButton",
+			"Browser"
 		],
 		"subfolders": []
 	},
@@ -220,7 +240,16 @@
 			"subfolders": []
 		},
 		"general": {
-			"items": [],
+			"items": [
+				{
+					"name": "customStyle.css",
+					"type": "text/css",
+					"sid": 429523213364632,
+					"file-info": {
+						"purpose": "stylesheet"
+					}
+				}
+			],
 			"subfolders": []
 		}
 	},
