@@ -5,6 +5,7 @@ export class Rules {
         this.isSimulating = false;
         this.isLoading = false;
         this.particles = {};
+        this.grid = {};
         this.colorValues = {
             blue: 0.1,
             red: 0.5,
@@ -48,6 +49,7 @@ export class Rules {
 
     update() {
         if (!this.isSimulating) return;
+        this.updateGrid(this.particles);
         const colors = Object.keys(this.createdColors);
         // Iterate over each color for the affected group of particles
         for (let affectedColor of colors) {
@@ -73,44 +75,92 @@ export class Rules {
     create(number, color) {
         const vwidth = this.runtime.viewportWidth;
         const vheight = this.runtime.viewportHeight;
-        // let group = [];
         for (let i = 0; i < number; i++) {
             const particle = this.runtime.objects.particle.createInstance(this.layer, this.random(vwidth), this.random(vheight));
             particle.effects[0].isActive = true;
             particle.effects[0].setParameter(0, this.colorValues[color]);
             particle.vx = 0;
             particle.vy = 0;
-            // group.push(particle);
             if (!this.particles[color]) this.particles[color] = [];
             this.particles[color].push(particle);
         }
-        // return group;
     }
 
     random(number) {
         return Math.random() * number;
     }
 
+    // Update the grid for spatial hashing
+    updateGrid(particles) {
+        const gridSize = this.interactionDistance; // Size of each grid cell
+        this.grid = {};
+
+        // Assign particles to grid cells
+        particles.forEach((particle) => {
+            const x = Math.floor(particle.x / gridSize);
+            const y = Math.floor(particle.y / gridSize);
+            const key = `${x}_${y}`; // Unique key for the grid cell
+
+            // If the cell doesn't exist, create an array for it
+            if (!this.grid[key]) {
+                this.grid[key] = [];
+            }
+
+            // Add the particle to the cell
+            this.grid[key].push(particle);
+        });
+    }
+
+    // Get particles in the nearby cells including the cell of the current particle
+    getNearbyParticles(particle, gridSize) {
+        const nearbyParticles = [];
+        const x = Math.floor(particle.x / gridSize);
+        const y = Math.floor(particle.y / gridSize);
+
+        // Check the surrounding cells including the particle's own cell
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                const key = `${x + dx}_${y + dy}`;
+                if (this.grid[key]) {
+                    nearbyParticles.push(...this.grid[key]);
+                }
+            }
+        }
+        return nearbyParticles;
+    }
+
+    // Calculate the force between two particles
+    calculateForce(a, b, g) {
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const dSquared = dx * dx + dy * dy; // square of distance between particles
+        if (dSquared >= 0 && dSquared < this.interactionDistanceSquared) {
+            const F = g / Math.sqrt(dSquared); // calculate F only when needed
+            return { fx: F * dx, fy: F * dy };
+        }
+        return { fx: 0, fy: 0 };
+    }
+
     // logic for simulation, p1 and p2 are arrays of particles, g is the gravity constant
-    rule(p1, p2, g) {    
+    rule(p1, p2, g) {
+        // update grid with all particles
+        this.updateGrid(p2);
+
         for (let i = 0; i < p1.length; i++) {
             let fx = 0; // force in x direction
             let fy = 0; // force in y direction
             let a = p1[i]; // particle a
-    
-            // calculate force
-            for (let j = 0; j < p2.length; j++) {
-                let b = p2[j]; // particle b
-                let dx = a.x - b.x;
-                let dy = a.y - b.y;
-                let dSquared = dx * dx + dy * dy; // square of distance between particles
-                if (dSquared > 0 && dSquared < this.interactionDistanceSquared) {
-                    let F = g / Math.sqrt(dSquared); // calculate F only when needed
-                    fx += F * dx;
-                    fy += F * dy;
-                }
-            }
-    
+
+            // Get nearby particles from spatial hash grid
+            const nearbyParticles = this.getNearbyParticles(a, this.interactionDistance);
+
+            // calculate force with nearby particles
+            nearbyParticles.forEach((b) => {
+                const force = this.calculateForce(a, b, g);
+                fx += force.fx;
+                fy += force.fy;
+            });
+
             // update velocity and position
             a.vx = (a.vx + fx) * this.friction;
             a.vy = (a.vy + fy) * this.friction;
@@ -128,6 +178,44 @@ export class Rules {
             }
         }
     }
+
+    // // logic for simulation, p1 and p2 are arrays of particles, g is the gravity constant
+    // rule(p1, p2, g) {    
+    //     for (let i = 0; i < p1.length; i++) {
+    //         let fx = 0; // force in x direction
+    //         let fy = 0; // force in y direction
+    //         let a = p1[i]; // particle a
+    
+    //         // calculate force
+    //         for (let j = 0; j < p2.length; j++) {
+    //             let b = p2[j]; // particle b
+    //             let dx = a.x - b.x;
+    //             let dy = a.y - b.y;
+    //             let dSquared = dx * dx + dy * dy; // square of distance between particles
+    //             if (dSquared > 0 && dSquared < this.interactionDistanceSquared) {
+    //                 let F = g / Math.sqrt(dSquared); // calculate F only when needed
+    //                 fx += F * dx;
+    //                 fy += F * dy;
+    //             }
+    //         }
+    
+    //         // update velocity and position
+    //         a.vx = (a.vx + fx) * this.friction;
+    //         a.vy = (a.vy + fy) * this.friction;
+    //         a.x += a.vx;
+    //         a.y += a.vy;
+    
+    //         // bounce off walls by ensuring particles are within bounds
+    //         if (a.x <= 0 || a.x >= this.vwidth) {
+    //             a.x = Math.max(1, Math.min(a.x, this.vwidth - 1)); // constrain between 0 and vwidth
+    //             a.vx *= -1;
+    //         }
+    //         if (a.y <= 0 || a.y >= this.vheight) {
+    //             a.y = Math.max(1, Math.min(a.y, this.vheight - 1)); // constrain between 0 and vheight
+    //             a.vy *= -1;
+    //         }
+    //     }
+    // }
 
     startSimulation() {
         this.createAllColors();
