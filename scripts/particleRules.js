@@ -52,6 +52,9 @@ export class Rules {
         this.interactionDistanceSquared = this.interactionDistance * this.interactionDistance;
         this.vwidth = this.runtime.viewportWidth;
         this.vheight = this.runtime.viewportHeight;
+
+        this.worker1 = new Worker("./workerRule.js");
+        this.worker2 = new Worker("./workerRule.js");
     }
 
     // update() {
@@ -83,23 +86,26 @@ export class Rules {
         const data = this.packageData();
         const [ grid1, grid2 ] = this.splitGrid(2);
 
-        // Create the workers
-        const worker1 = new Worker("scripts/workerRule.js");
-        const worker2 = new Worker("scripts/workerRule.js");
-
         // Post the data to the workers
-        worker1.postMessage([ data, grid1 ]);
-        worker2.postMessage([ data, grid2 ]);
+        this.worker1.postMessage([ data, grid1 ]);
+        this.worker2.postMessage([ data, grid2 ]);
 
         // Listen for messages from the workers
-        worker1.onmessage = (e) => {
-            
+        this.worker1.onmessage = (e) => {
+            console.log("worker1", e);
         }
 
-        worker2.onmessage = (e) => {
-            
+        this.worker2.onmessage = (e) => {
+            console.log("worker2", e);
         }
     }
+
+    // async newWorker() {
+    //     const messagePort = await this.runtime.createWorker("./workerRule.js");
+    //     messagePort.onmessage = (e) => {
+    //         // console.log(e);
+    //     }
+    // }
 
     packageData() {
         const data = {
@@ -188,6 +194,7 @@ export class Rules {
         // }
 
         for (let i = 0; i < this.particlesArray.length; i++) {
+            const particle = this.particlesArray[i];
             const x = Math.floor(particle.x / gridSize);
             const y = Math.floor(particle.y / gridSize);
             const key = `${x}_${y}`; // Unique key for the grid cell

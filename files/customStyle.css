@@ -20,18 +20,9 @@ input[type=range]::-webkit-slider-runnable-track {
 	-webkit-appearance: none;
 	appearance: none;
     background: linear-gradient(to right, #FFA07A, #FFFFE0); /* Gradient track */
-    border-radius: 10px;
+    border-radius: 25%;
 }
 
 input[type=range]:disabled::-webkit-slider-runnable-track {
     background: #cccccc; /* Grayed out color for the disabled track */
-}
-
-/* Styling the slider thumb */
-input[type=range]::-webkit-slider-thumb {
-	-webkit-appearance: none;
-	appearance: none;
-	height: 20px;
-    background: #fff; /* White thumb */
-    border: 2px solid #8e44ad; /* Border around the thumb */
 }

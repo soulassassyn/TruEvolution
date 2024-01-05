@@ -14,6 +14,8 @@ onmessage = function(fullData) {
             rule(particle, getNearbyParticles(particle, data), data);
         }
     }
+    console.log('Worker: Posting message back to main script');
+    postMessage("done");
 }
 
 // // Get particles in the nearby cells including the cell of the current particle
