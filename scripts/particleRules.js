@@ -55,19 +55,37 @@ export class Rules {
 
     update() {
         if (!this.isSimulating) return;
+    
+        // Update the grid with the current particles
         this.updateGrid(this.particles);
-        const colors = Object.keys(this.createdColors);
-        // Iterate over each color for the affected group of particles
-        for (let affectedColor of colors) {
-            // Iterate over each color for the affecting group of particles
-            for (let affectingColor of colors) {
-                // Retrieve the gravity constant from the ruleSet
-                let gravityConstant = this.ruleSet[affectedColor][affectingColor];
-                // Execute the rule for the affected and affecting color pair
-                this.rule(this.particles[affectedColor], this.particles[affectingColor], gravityConstant);
+    
+        // Iterate over each cell in the grid
+        for (let key in this.grid) {
+            const particlesInCell = this.grid[key];
+    
+            // Iterate over each particle in the cell
+            for (let i = 0; i < particlesInCell.length; i++) {
+                const particle = particlesInCell[i];
+                // Execute the rule for each particle against nearby particles
+                this.rule(particle, this.getNearbyParticles(particle, this.interactionDistance));
             }
-        }    
-    }
+        }
+    }    
+
+    // update() {
+    //     if (!this.isSimulating) return;
+    //     const colors = Object.keys(this.createdColors);
+    //     // Iterate over each color for the affected group of particles
+    //     for (let affectedColor of colors) {
+    //         // Iterate over each color for the affecting group of particles
+    //         for (let affectingColor of colors) {
+    //             // Retrieve the gravity constant from the ruleSet
+    //             let gravityConstant = this.ruleSet[affectedColor][affectingColor];
+    //             // Execute the rule for the affected and affecting color pair
+    //             this.rule(this.particles[affectedColor], this.particles[affectingColor], gravityConstant);
+    //         }
+    //     }    
+    // }
 
     createAllColors() {
         // Iterate over each color stored in createdColors and get the color and number of particles
@@ -86,6 +104,7 @@ export class Rules {
             particle.effects[0].setParameter(0, this.colorValues[color]);
             particle.vx = 0;
             particle.vy = 0;
+            particle.color = color;
             if (!this.particles[color]) this.particles[color] = [];
             this.particles[color].push(particle);
         }
@@ -96,27 +115,29 @@ export class Rules {
     }
 
     // Update the grid for spatial hashing
-    updateGrid(particles) {
+    updateGrid() {
         const gridSize = this.interactionDistance; // Size of each grid cell
         this.grid = {};
 
-        // Assign particles to grid cells
-        particles.forEach((particle) => {
-            const x = Math.floor(particle.x / gridSize);
-            const y = Math.floor(particle.y / gridSize);
-            const key = `${x}_${y}`; // Unique key for the grid cell
+        // Iterate over each color array in the particles object
+        for (let color in this.particles) {
+            this.particles[color].forEach((particle) => {
+                const x = Math.floor(particle.x / gridSize);
+                const y = Math.floor(particle.y / gridSize);
+                const key = `${x}_${y}`; // Unique key for the grid cell
 
-            // If the cell doesn't exist, create an array for it
-            if (!this.grid[key]) {
-                this.grid[key] = [];
-            }
+                // If the cell doesn't exist, create an array for it
+                if (!this.grid[key]) {
+                    this.grid[key] = [];
+                }
 
-            // Add the particle to the cell
-            this.grid[key].push(particle);
-        });
+                // Add the particle to the cell
+                this.grid[key].push(particle);
+            });
+        }
     }
 
-    // Get particles in the nearby cells including the cell of the current particle
+    // // Get particles in the nearby cells including the cell of the current particle
     getNearbyParticles(particle, gridSize) {
         const nearbyParticles = [];
         const x = Math.floor(particle.x / gridSize);
@@ -146,41 +167,72 @@ export class Rules {
         return { fx: 0, fy: 0 };
     }
 
-    // logic for simulation, p1 and p2 are arrays of particles, g is the gravity constant
-    rule(p1, p2, g) {
-        // update grid with all particles
-        this.updateGrid(p2);
+    // Collision detection and resolution function
+    resolveCollision(a, b) {
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const minDistance = 2; // Since each particle has a size of 2x2
 
-        for (let i = 0; i < p1.length; i++) {
-            let fx = 0; // force in x direction
-            let fy = 0; // force in y direction
-            let a = p1[i]; // particle a
+        // Check for collision
+        if (distance < minDistance && distance > 0) {
+            // Calculate overlap
+            const overlap = 0.5 * (minDistance - distance);
 
-            // Get nearby particles from spatial hash grid
-            const nearbyParticles = this.getNearbyParticles(a, this.interactionDistance);
+            // Calculate the displacement needed for each particle along the line of centers
+            const displacementX = overlap * (dx / distance);
+            const displacementY = overlap * (dy / distance);
 
-            // calculate force with nearby particles
-            nearbyParticles.forEach((b) => {
-                const force = this.calculateForce(a, b, g);
-                fx += force.fx;
-                fy += force.fy;
-            });
+            // Adjust positions to resolve collision
+            a.x += displacementX;
+            a.y += displacementY;
+            b.x -= displacementX;
+            b.y -= displacementY;
+        }
+    }
 
-            // update velocity and position
-            a.vx = (a.vx + fx) * this.friction;
-            a.vy = (a.vy + fy) * this.friction;
-            a.x += a.vx;
-            a.y += a.vy;
-    
-            // bounce off walls by ensuring particles are within bounds
-            if (a.x <= 0 || a.x >= this.vwidth) {
-                a.x = Math.max(1, Math.min(a.x, this.vwidth - 1)); // constrain between 0 and vwidth
-                a.vx *= -1;
-            }
-            if (a.y <= 0 || a.y >= this.vheight) {
-                a.y = Math.max(1, Math.min(a.y, this.vheight - 1)); // constrain between 0 and vheight
-                a.vy *= -1;
-            }
+
+    // Logic for simulation, p1 is a single particle, nearbyParticles are the particles to check against
+    rule(p1, nearbyParticles) {
+        let fx = 0; // force in x direction
+        let fy = 0; // force in y direction
+        let a = p1; // particle a
+
+        // Calculate force with nearby particles
+        nearbyParticles.forEach((b) => {
+            if (a === b) return; // Skip interaction with itself
+
+            // Resolve collision if any
+            this.resolveCollision(a, b);    
+
+            // Retrieve the gravity constant from the ruleSet, assuming particles have a color property
+            let gravityConstant = this.ruleSet[a.color][b.color];
+
+            const force = this.calculateForce(a, b, gravityConstant);
+            fx += force.fx;
+            fy += force.fy;
+        });
+
+        // Update velocity and position
+        a.vx = (a.vx + fx) * this.friction;
+        a.vy = (a.vy + fy) * this.friction;
+        a.x += a.vx;
+        a.y += a.vy;
+
+        // Bounce off walls by ensuring particles are within bounds and adjusting velocity
+        if (a.x <= 0) {
+            a.x = -a.x; // Reflect position from the boundary
+            a.vx *= -1; // Reverse velocity
+        } else if (a.x >= this.vwidth) {
+            a.x = 2 * this.vwidth - a.x; // Reflect position from the boundary
+            a.vx *= -1; // Reverse velocity
+        }
+        if (a.y <= 0) {
+            a.y = -a.y; // Reflect position from the boundary
+            a.vy *= -1; // Reverse velocity
+        } else if (a.y >= this.vheight) {
+            a.y = 2 * this.vheight - a.y; // Reflect position from the boundary
+            a.vy *= -1; // Reverse velocity
         }
     }
 
@@ -212,11 +264,11 @@ export class Rules {
     
     //         // bounce off walls by ensuring particles are within bounds
     //         if (a.x <= 0 || a.x >= this.vwidth) {
-    //             a.x = Math.max(1, Math.min(a.x, this.vwidth - 1)); // constrain between 0 and vwidth
+    //             a.x = Math.max(1, Math.min(a.x, this.vwidth - 1));
     //             a.vx *= -1;
     //         }
     //         if (a.y <= 0 || a.y >= this.vheight) {
-    //             a.y = Math.max(1, Math.min(a.y, this.vheight - 1)); // constrain between 0 and vheight
+    //             a.y = Math.max(1, Math.min(a.y, this.vheight - 1));
     //             a.vy *= -1;
     //         }
     //     }
@@ -261,8 +313,8 @@ export class Rules {
             }
         }
 
-        this.friction = parseFloat(this.randomRange(0.1, 1).toFixed(1));
-        this.interactionDistance = Math.floor(this.randomRange(100, 650));
+        this.friction = parseFloat(this.randomRange(0.1, 0.5).toFixed(1));
+        this.interactionDistance = Math.floor(this.randomRange(50, 250));
         this.updateInteractionDistanceSquared();
     }
 

@@ -32,7 +32,8 @@ function Tick(runtime)
 
 	if (!runtime.Rules.isSimulating && !runtime.Rules.isLoading) {
 		protectNumberInput(runtime);
-		protectFrictionInput(runtime)
+		protectFrictionInput(runtime);
+		protectInteractionDistanceInput(runtime);
 		sliderValueUpdate(runtime);
 		sliderEnabledUpdate(runtime);
 		settingParametersUpdate(runtime);
@@ -123,11 +124,28 @@ function protectFrictionInput(runtime) {
 		if (setting.instVars.setting == "friction") {
 			const number = Number(setting.text);
 
-			if (number < 0) {
-				setting.text = "0";
+			if (number < 0.1) {
+				setting.text = "0.1";
 			}
-			if (number > 1) {
-				setting.text = "1";
+			if (number > 0.5) {
+				setting.text = "0.5";
+			}
+		}
+	});
+}
+
+function protectInteractionDistanceInput(runtime) {
+	const settingInput = runtime.objects.settingInput.getAllInstances();
+
+	settingInput.forEach((setting) => {
+		if (setting.instVars.setting == "interactionDistance") {
+			const number = Number(setting.text);
+
+			if (number < 25) {
+				setting.text = "25";
+			}
+			if (number > 225) {
+				setting.text = "225";
 			}
 		}
 	});
