@@ -5,6 +5,12 @@ export class Rules {
         this.isSimulating = false;
         this.isLoading = false;
         this.particles = {};
+        // this.particles = {
+        //     blue: [],
+        //     red: [],
+        //     yellow: [],
+        //     green: [],
+        // };
         this.grid = {};
         this.colorValues = {
             blue: 0.1,
@@ -57,7 +63,6 @@ export class Rules {
             for (let affectingColor of colors) {
                 // Retrieve the gravity constant from the ruleSet
                 let gravityConstant = this.ruleSet[affectedColor][affectingColor];
-    
                 // Execute the rule for the affected and affecting color pair
                 this.rule(this.particles[affectedColor], this.particles[affectingColor], gravityConstant);
             }

@@ -3,7 +3,7 @@
 	"savedWithRelease": 36802,
 	"name": "Truevolution",
 	"runtime": "c3",
-	"useWorker": "auto",
+	"useWorker": "worker",
 	"bundleAddons": false,
 	"usedAddons": [
 		{
