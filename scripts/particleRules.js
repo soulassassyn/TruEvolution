@@ -5,6 +5,7 @@ export class Rules {
         this.isSimulating = false;
         this.isLoading = false;
         this.particles = {};
+        this.particlesArray = [];
         // this.particles = {
         //     blue: [],
         //     red: [],
@@ -74,14 +75,30 @@ export class Rules {
 
     update() {
         if (!this.isSimulating) return;
+
+        // Update the grid with the current particles
+        this.updateGrid(this.particlesArray);
+
+        // Package the data for the worker
         const data = this.packageData();
         const [ grid1, grid2 ] = this.splitGrid(2);
 
+        // Create the workers
         const worker1 = new Worker("scripts/workerRule.js");
         const worker2 = new Worker("scripts/workerRule.js");
 
+        // Post the data to the workers
         worker1.postMessage([ data, grid1 ]);
         worker2.postMessage([ data, grid2 ]);
+
+        // Listen for messages from the workers
+        worker1.onmessage = (e) => {
+            
+        }
+
+        worker2.onmessage = (e) => {
+            
+        }
     }
 
     packageData() {
@@ -137,8 +154,9 @@ export class Rules {
             particle.vx = 0;
             particle.vy = 0;
             particle.color = color;
-            if (!this.particles[color]) this.particles[color] = [];
-            this.particles[color].push(particle);
+            // if (!this.particles[color]) this.particles[color] = [];
+            // this.particles[color].push(particle);
+            this.particlesArray.push(particle);
         }
     }
     
@@ -151,21 +169,36 @@ export class Rules {
         const gridSize = this.interactionDistance; // Size of each grid cell
         this.grid = {};
         
+        // DEPRECATED ITERATOR USING this.particles OBJECT INSTEAD OF this.particlesArray
         // Iterate over each color array in the particles object
-        for (let color in this.particles) {
-            this.particles[color].forEach((particle) => {
-                const x = Math.floor(particle.x / gridSize);
-                const y = Math.floor(particle.y / gridSize);
-                const key = `${x}_${y}`; // Unique key for the grid cell
+        // for (let color in this.particles) {
+        //     this.particles[color].forEach((particle) => {
+        //         const x = Math.floor(particle.x / gridSize);
+        //         const y = Math.floor(particle.y / gridSize);
+        //         const key = `${x}_${y}`; // Unique key for the grid cell
                 
-                // If the cell doesn't exist, create an array for it
-                if (!this.grid[key]) {
-                    this.grid[key] = [];
-                }
+        //         // If the cell doesn't exist, create an array for it
+        //         if (!this.grid[key]) {
+        //             this.grid[key] = [];
+        //         }
                 
-                // Add the particle to the cell
-                this.grid[key].push(particle);
-            });
+        //         // Add the particle to the cell
+        //         this.grid[key].push(particle);
+        //     });
+        // }
+
+        for (let i = 0; i < this.particlesArray.length; i++) {
+            const x = Math.floor(particle.x / gridSize);
+            const y = Math.floor(particle.y / gridSize);
+            const key = `${x}_${y}`; // Unique key for the grid cell
+                
+            // If the cell doesn't exist, create an array for it
+            if (!this.grid[key]) {
+                this.grid[key] = [];
+            }
+                
+            // Add the particle to the cell
+            this.grid[key].push(particle);
         }
     }
     
@@ -275,6 +308,7 @@ export class Rules {
     resetSimulation() {
         this.isSimulating = false;
         this.particles = {};
+        this.particlesArray = [];
         this.createdColors = {};
     }
     
