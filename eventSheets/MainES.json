@@ -62,7 +62,7 @@
 				},
 				{
 					"type": "script",
-					"script": "runtime.Rules.resetSimulation();"
+					"script": "// runtime.Rules.terminateWorkers();\nruntime.Rules.resetSimulation();"
 				},
 				{
 					"callFunction": "removeParticles",
@@ -90,7 +90,7 @@
 				},
 				{
 					"type": "script",
-					"script": "runtime.Rules.resetSimulation();"
+					"script": "// runtime.Rules.terminateWorkers();\nruntime.Rules.resetSimulation();"
 				},
 				{
 					"callFunction": "removeParticles",

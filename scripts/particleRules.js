@@ -4,8 +4,9 @@ export class Rules {
         this.layer = "interactive"
         this.isSimulating = false;
         this.isLoading = false;
-        this.particles = {};
         this.particlesArray = [];
+        this.particleMap = new Map();
+        this.particles = {};
         // this.particles = {
         //     blue: [],
         //     red: [],
@@ -92,31 +93,29 @@ export class Rules {
 
         // Listen for messages from the workers
         this.worker1.onmessage = (e) => {
-            console.log("worker1", e);
+            // console.log("worker1", e.data);
+            const updatedParticles = e.data;
+            this.workerUpdateParticles(updatedParticles);
         }
 
         this.worker2.onmessage = (e) => {
-            console.log("worker2", e);
+            // console.log("worker2", e.data);
+            const updatedParticles = e.data;
+            this.workerUpdateParticles(updatedParticles);
         }
     }
 
-    // async newWorker() {
-    //     const messagePort = await this.runtime.createWorker("./workerRule.js");
-    //     messagePort.onmessage = (e) => {
-    //         // console.log(e);
-    //     }
-    // }
+    terminateWorkers() {
+        this.worker1.terminate();
+        this.worker2.terminate();
+    }
 
     packageData() {
         const data = {
-            createdColors: this.createdColors,
             ruleSet: this.ruleSet,
             interactionDistance: this.interactionDistance,
             interactionDistanceSquared: this.interactionDistanceSquared,
-            friction: this.friction,
             grid: this.grid,
-            vwidth: this.vwidth,
-            vheight: this.vheight,
         }
         return data;
     }
@@ -142,28 +141,75 @@ export class Rules {
         return [ grid1, grid2 ];        
     }
 
+    workerUpdateParticles(updatedParticles) {
+        for (let i = 0; i < updatedParticles.length; i++) {
+            const particle = updatedParticles[i];
+            let index = this.particleMap.get(particle.id);
+            let a = this.particlesArray[index];
+            a.vx = particle.vx;
+            a.vy = particle.vy;
+            let fx = particle.fx;
+            let fy = particle.fy;
+            
+            // Update velocity and position
+            a.vx = (a.vx + fx) * this.friction;
+            a.vy = (a.vy + fy) * this.friction;
+            a.x += a.vx;
+            a.y += a.vy;
+            
+            // Bounce off walls by ensuring particles are within bounds and adjusting velocity
+            if (a.x <= 0) {
+                a.x = -a.x; // Reflect position from the boundary
+                a.vx *= -1; // Reverse velocity
+            } else if (a.x >= this.vwidth) {
+                a.x = 2 * this.vwidth - a.x; // Reflect position from the boundary
+                a.vx *= -1; // Reverse velocity
+            }
+            if (a.y <= 0) {
+                a.y = -a.y; // Reflect position from the boundary
+                a.vy *= -1; // Reverse velocity
+            } else if (a.y >= this.vheight) {
+                a.y = 2 * this.vheight - a.y; // Reflect position from the boundary
+                a.vy *= -1; // Reverse velocity
+            }
+            // this.particlesArray[index].x = particle.wx;
+            // this.particlesArray[index].y = particle.wy;
+        }
+    }
+
     createAllColors() {
         // Iterate over each color stored in createdColors and get the color and number of particles
         for (let color in this.createdColors) {
             let number = this.createdColors[color];
             this.create(number, color);
         }
+        this.mapParticles(); // Map the particles to the particleMap for fast lookup later
     }
     
     create(number, color) {
         const vwidth = this.runtime.viewportWidth;
         const vheight = this.runtime.viewportHeight;
         for (let i = 0; i < number; i++) {
-            const particle = this.runtime.objects.particle.createInstance(this.layer, this.random(vwidth), this.random(vheight));
+            const x = this.random(vwidth);
+            const y = this.random(vheight);
+            const particle = this.runtime.objects.particle.createInstance(this.layer, x, y);
             particle.effects[0].isActive = true;
             particle.effects[0].setParameter(0, this.colorValues[color]);
             particle.vx = 0;
             particle.vy = 0;
+            particle.wx = x; // X variable for the worker
+            particle.wy = y; // Y variable for the worker
+            particle.id = particle.uid;
             particle.color = color;
-            // if (!this.particles[color]) this.particles[color] = [];
-            // this.particles[color].push(particle);
+
             this.particlesArray.push(particle);
         }
+    }
+
+    mapParticles() {
+        this.particlesArray.forEach((particle, index) => {
+            this.particleMap.set(particle.uid, index);
+        });
     }
     
     random(number) {

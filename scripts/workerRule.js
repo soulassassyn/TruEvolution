@@ -1,9 +1,9 @@
 onmessage = function(fullData) {
-    console.log("Message received from main script");
-    let gridSegment = fullData[1];
-    let data = fullData[0];
+    let data = fullData.data[0];
+    let gridSegment = fullData.data[1];
 
     // Iterate over each cell in the grid
+    let updatedParticles = [];
     for (let key in gridSegment) {
         const particlesInCell = gridSegment[key];
 
@@ -11,19 +11,20 @@ onmessage = function(fullData) {
         for (let i = 0; i < particlesInCell.length; i++) {
             const particle = particlesInCell[i];
             // Execute the rule for each particle against nearby particles
-            rule(particle, getNearbyParticles(particle, data), data);
+            const updatedParticle = rule(particle, getNearbyParticles(particle, data), data);
+            updatedParticles.push(updatedParticle);
         }
     }
-    console.log('Worker: Posting message back to main script');
-    postMessage("done");
+
+    postMessage(updatedParticles);
 }
 
 // // Get particles in the nearby cells including the cell of the current particle
 function getNearbyParticles(particle, data) {
     const gridSize = data.interactionDistance;
     const nearbyParticles = [];
-    const x = Math.floor(particle.x / gridSize);
-    const y = Math.floor(particle.y / gridSize);
+    const x = Math.floor(particle.wx / gridSize);
+    const y = Math.floor(particle.wy / gridSize);
     
     // Check the surrounding cells including the particle's own cell
     for (let dx = -1; dx <= 1; dx++) {
@@ -39,8 +40,8 @@ function getNearbyParticles(particle, data) {
 
 // Calculate the force between two particles
 function calculateForce(a, b, g, data) {
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
+    const dx = a.wx - b.wx;
+    const dy = a.wy - b.wy;
     const dSquared = dx * dx + dy * dy; // square of distance between particles
     if (dSquared >= 0 && dSquared < data.interactionDistanceSquared) {
         const F = g / Math.sqrt(dSquared); // calculate F only when needed
@@ -51,8 +52,8 @@ function calculateForce(a, b, g, data) {
 
 // Collision detection and resolution function
 function resolveCollision(a, b) {
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
+    const dx = a.wx - b.wx;
+    const dy = a.wy - b.wy;
     const distance = Math.sqrt(dx * dx + dy * dy);
     const minDistance = 2; // Since each particle has a size of 2x2
     
@@ -66,19 +67,18 @@ function resolveCollision(a, b) {
         const displacementY = overlap * (dy / distance);
         
         // Adjust positions to resolve collision
-        a.x += displacementX;
-        a.y += displacementY;
-        b.x -= displacementX;
-        b.y -= displacementY;
+        a.wx += displacementX;
+        a.wy += displacementY;
+        b.wx -= displacementX;
+        b.wy -= displacementY;
     }
+    return [ a, b ];
 }
 
 // Logic for simulation, p1 is a single particle, nearbyParticles are the particles to check against
 function rule(p1, nearbyParticles, data) {
-    const friction = data.friction;
     const ruleSet = data.ruleSet;
-    const vwidth = data.vwidth;
-    const vheight = data.vheight;
+
     let fx = 0; // force in x direction
     let fy = 0; // force in y direction
     let a = p1; // particle a
@@ -86,37 +86,37 @@ function rule(p1, nearbyParticles, data) {
     // Calculate force with nearby particles
     nearbyParticles.forEach((b) => {
         if (a === b) return; // Skip interaction with itself
-        
         // Resolve collision if any
-        resolveCollision(a, b);    
+        [ a, b ] = resolveCollision(a, b);
         
-        // Retrieve the gravity constant from the ruleSet, assuming particles have a color property
+        // Retrieve the gravity constant from the ruleSet using color property
         let gravityConstant = ruleSet[a.color][b.color];
         
         const force = calculateForce(a, b, gravityConstant, data);
-        fx += force.fx;
-        fy += force.fy;
+        a.fx += force.fx;
+        a.fy += force.fy;
     });
     
-    // Update velocity and position
-    a.vx = (a.vx + fx) * friction;
-    a.vy = (a.vy + fy) * friction;
-    a.x += a.vx;
-    a.y += a.vy;
+    // // Update velocity and position
+    // a.vx = (a.vx + fx) * friction;
+    // a.vy = (a.vy + fy) * friction;
+    // a.wx += a.vx;
+    // a.wy += a.vy;
     
-    // Bounce off walls by ensuring particles are within bounds and adjusting velocity
-    if (a.x <= 0) {
-        a.x = -a.x; // Reflect position from the boundary
-        a.vx *= -1; // Reverse velocity
-    } else if (a.x >= vwidth) {
-        a.x = 2 * vwidth - a.x; // Reflect position from the boundary
-        a.vx *= -1; // Reverse velocity
-    }
-    if (a.y <= 0) {
-        a.y = -a.y; // Reflect position from the boundary
-        a.vy *= -1; // Reverse velocity
-    } else if (a.y >= vheight) {
-        a.y = 2 * vheight - a.y; // Reflect position from the boundary
-        a.vy *= -1; // Reverse velocity
-    }
+    // // Bounce off walls by ensuring particles are within bounds and adjusting velocity
+    // if (a.wx <= 0) {
+    //     a.wx = -a.wx; // Reflect position from the boundary
+    //     a.vx *= -1; // Reverse velocity
+    // } else if (a.wx >= vwidth) {
+    //     a.wx = 2 * vwidth - a.wx; // Reflect position from the boundary
+    //     a.vx *= -1; // Reverse velocity
+    // }
+    // if (a.wy <= 0) {
+    //     a.wy = -a.wy; // Reflect position from the boundary
+    //     a.vy *= -1; // Reverse velocity
+    // } else if (a.wy >= vheight) {
+    //     a.wy = 2 * vheight - a.wy; // Reflect position from the boundary
+    //     a.vy *= -1; // Reverse velocity
+    // }
+    return a;
 }
