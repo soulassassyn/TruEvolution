@@ -1,6 +1,7 @@
 export class SeedLogic {
     constructor(runtime) {
         this.runtime = runtime;
+        this.maxParticles = 1200;
     }
 
     setSeedText() {
@@ -19,20 +20,25 @@ export class SeedLogic {
             // If the color is not active, set all the values to 0 and delete the color from createdColors
             if (!isColorActive) {
                 for (let affectingColor in this.runtime.Rules.ruleSet[color]) {
-                    this.runtime.Rules.ruleSet[color][affectingColor] = 0;
-                    delete this.runtime.Rules.createdColors[color];
-                }
+                    this.runtime.Rules.ruleSet[color][affectingColor] = 0; // Set the ruleSet value to 0 (no attraction or repulsion)
+                    delete this.runtime.Rules.createdColors[color]; // Delete the color from createdColors (no particles of this color)
+                } 
             } else {
-                const numberOfParticles = Math.floor(this.randomRange(50, 250));
-                this.runtime.Rules.createdColors[color] = numberOfParticles;
-                for (let affectingColor in this.runtime.Rules.ruleSet[color]) {
-                    this.runtime.Rules.ruleSet[color][affectingColor] = parseFloat(this.randomRange(-2, 2).toFixed(1));
-                }
+                this.runtime.Rules.createdColors[color] = 0; // Set the createdColors value to 0 just for calculating the maxParticlesPerColor below
+            }
+        }
+            
+        const maxParticlesPerColor = Math.floor(this.maxParticles / Object.keys(this.runtime.Rules.createdColors).length); // Dynamically set the max particles per color based on active colors
+        for (let color in this.runtime.Rules.createdColors) {
+            const numberOfParticles = Math.floor(this.randomRange(50, maxParticlesPerColor));
+            this.runtime.Rules.createdColors[color] = numberOfParticles; // Set the createdColors value to the random number of particles
+            for (let affectingColor in this.runtime.Rules.ruleSet[color]) {
+                this.runtime.Rules.ruleSet[color][affectingColor] = parseFloat(this.randomRange(-2, 2).toFixed(1));
             }
         }
         
         this.runtime.Rules.friction = parseFloat(this.randomRange(0.1, 0.5).toFixed(1));
-        this.runtime.Rules.interactionDistance = Math.floor(this.randomRange(50, 250));
+        this.runtime.Rules.interactionDistance = Math.floor(this.randomRange(100, 200));
         this.updateInteractionDistanceSquared();
     }
     

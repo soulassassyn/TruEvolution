@@ -47,25 +47,48 @@ function getNearbyParticles(particle, data) {
     return nearbyParticles;
 }
 
+// Logic for simulation, p1 is a single particle, nearbyParticles are the particles to check against
+function rule(p1, nearbyParticles, data) {
+    const ruleSet = data.ruleSet;
+    let a = p1; // particle a
+    
+    // Calculate force with nearby particles
+    nearbyParticles.forEach((b) => { // particle b
+        if (a === b) return; // Skip interaction with itself
+        const dx = a.wx - b.wx;
+        const dy = a.wy - b.wy;
+        const dSquared = dx * dx + dy * dy;
+        const distance = Math.sqrt(dSquared);
+        const dCalcs = { dx, dy, dSquared, distance };
+
+        // Resolve collision if any
+        [ a, b ] = resolveCollision(a, b, dCalcs);
+        
+        // Retrieve the gravity constant from the ruleSet using color property
+        let gravityConstant = ruleSet[a.color][b.color];
+        
+        const force = calculateForce(gravityConstant, dCalcs, data);
+        a.fx += force.fx;
+        a.fy += force.fy;
+    });
+    // console.log(a);
+    return a;
+}
+
 // Calculate the force between two particles
-function calculateForce(a, b, g, data) {
-    const dx = a.wx - b.wx;
-    const dy = a.wy - b.wy;
-    const dSquared = dx * dx + dy * dy; // square of distance between particles
+function calculateForce(gravityConstant, dCalcs, data) {
+    const { dx, dy, dSquared, distance } = dCalcs;
     if (dSquared >= 0 && dSquared < data.interactionDistanceSquared) {
-        const F = g / Math.sqrt(dSquared); // F (force) is inversely proportional to distance (Newton's law of universal gravitation)
+        const F = gravityConstant / distance; // F (force) is inversely proportional to distance (Newton's law of universal gravitation)
         return { fx: F * dx, fy: F * dy };
     }
     return { fx: 0, fy: 0 };
 }
 
 // Collision detection and resolution function
-function resolveCollision(a, b) {
-    const dx = a.wx - b.wx;
-    const dy = a.wy - b.wy;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+function resolveCollision(a, b, dCalcs) {
     const minDistance = 2; // Since each particle has a size of 2x2
-    
+    const { dx, dy, dSquared, distance } = dCalcs;
     // Check for collision
     if (distance < minDistance && distance > 0) {
         // Calculate overlap
@@ -82,29 +105,4 @@ function resolveCollision(a, b) {
         b.wy -= displacementY;
     }
     return [ a, b ];
-}
-
-// Logic for simulation, p1 is a single particle, nearbyParticles are the particles to check against
-function rule(p1, nearbyParticles, data) {
-    const ruleSet = data.ruleSet;
-
-    let fx = 0; // force in x direction
-    let fy = 0; // force in y direction
-    let a = p1; // particle a
-    
-    // Calculate force with nearby particles
-    nearbyParticles.forEach((b) => {
-        if (a === b) return; // Skip interaction with itself
-        // Resolve collision if any
-        [ a, b ] = resolveCollision(a, b);
-        
-        // Retrieve the gravity constant from the ruleSet using color property
-        let gravityConstant = ruleSet[a.color][b.color];
-        
-        const force = calculateForce(a, b, gravityConstant, data);
-        a.fx += force.fx;
-        a.fy += force.fy;
-    });
-    // console.log(a);
-    return a;
 }
