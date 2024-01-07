@@ -15,7 +15,6 @@ onmessage = function(fullData) {
             updatedParticles.push(updatedParticle);
         }
     }
-
     postMessage(updatedParticles);
 }
 
@@ -96,27 +95,6 @@ function rule(p1, nearbyParticles, data) {
         a.fx += force.fx;
         a.fy += force.fy;
     });
-    
-    // // Update velocity and position
-    // a.vx = (a.vx + fx) * friction;
-    // a.vy = (a.vy + fy) * friction;
-    // a.wx += a.vx;
-    // a.wy += a.vy;
-    
-    // // Bounce off walls by ensuring particles are within bounds and adjusting velocity
-    // if (a.wx <= 0) {
-    //     a.wx = -a.wx; // Reflect position from the boundary
-    //     a.vx *= -1; // Reverse velocity
-    // } else if (a.wx >= vwidth) {
-    //     a.wx = 2 * vwidth - a.wx; // Reflect position from the boundary
-    //     a.vx *= -1; // Reverse velocity
-    // }
-    // if (a.wy <= 0) {
-    //     a.wy = -a.wy; // Reflect position from the boundary
-    //     a.vy *= -1; // Reverse velocity
-    // } else if (a.wy >= vheight) {
-    //     a.wy = 2 * vheight - a.wy; // Reflect position from the boundary
-    //     a.vy *= -1; // Reverse velocity
-    // }
+    // console.log(a);
     return a;
 }

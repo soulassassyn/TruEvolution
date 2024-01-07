@@ -78,25 +78,21 @@ export class Rules {
 
         // Listen for messages from the workers
         this.worker1.onmessage = (e) => {
-            // console.log("worker1", e.data);
             const updatedParticles = e.data;
             this.workerUpdateParticles(updatedParticles);
         }
 
         this.worker2.onmessage = (e) => {
-            // console.log("worker2", e.data);
             const updatedParticles = e.data;
             this.workerUpdateParticles(updatedParticles);
         }
 
         this.worker3.onmessage = (e) => {
-            // console.log("worker3", e.data);
             const updatedParticles = e.data;
             this.workerUpdateParticles(updatedParticles);
         }
 
         this.worker4.onmessage = (e) => {
-            // console.log("worker4", e.data);
             const updatedParticles = e.data;
             this.workerUpdateParticles(updatedParticles);
         }
@@ -147,6 +143,8 @@ export class Rules {
             const particle = updatedParticles[i];
             let index = this.particleMap.get(particle.id);
             let a = this.particlesArray[index];
+            a.x = particle.wx;
+            a.y = particle.wy;
             a.vx = particle.vx;
             a.vy = particle.vy;
             let fx = particle.fx;
@@ -224,10 +222,12 @@ export class Rules {
         
         for (let i = 0; i < this.particlesArray.length; i++) {
             const particle = this.particlesArray[i];
+            particle.wx = particle.x; // Update wx variable for the worker
+            particle.wy = particle.y; // Update wy variable for the worker
             const x = Math.floor(particle.x / gridSize);
             const y = Math.floor(particle.y / gridSize);
             const key = `${x}_${y}`; // Unique key for the grid cell
-                
+            
             // If the cell doesn't exist, create an array for it
             if (!this.grid[key]) {
                 this.grid[key] = [];
