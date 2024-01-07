@@ -1,19 +1,29 @@
 onmessage = function(fullData) {
     let data = fullData.data[0];
-    let gridSegment = fullData.data[1];
+    // let gridSegment = fullData.data[1];
+    let particleSegment = fullData.data[1];
 
-    // Iterate over each cell in the grid
+    // // Iterate over each cell in the grid
+    // let updatedParticles = [];
+    // for (let key in gridSegment) {
+    //     const particlesInCell = gridSegment[key];
+
+    //     // Iterate over each particle in the cell
+    //     for (let i = 0; i < particlesInCell.length; i++) {
+    //         const particle = particlesInCell[i];
+    //         // Execute the rule for each particle against nearby particles
+    //         const updatedParticle = rule(particle, getNearbyParticles(particle, data), data);
+    //         updatedParticles.push(updatedParticle);
+    //     }
+    // }
+
+    // Iterate over each particle in the segment
     let updatedParticles = [];
-    for (let key in gridSegment) {
-        const particlesInCell = gridSegment[key];
-
-        // Iterate over each particle in the cell
-        for (let i = 0; i < particlesInCell.length; i++) {
-            const particle = particlesInCell[i];
-            // Execute the rule for each particle against nearby particles
-            const updatedParticle = rule(particle, getNearbyParticles(particle, data), data);
-            updatedParticles.push(updatedParticle);
-        }
+    for (let i = 0; i < particleSegment.length; i++) {
+        const particle = particleSegment[i];
+        // Execute the rule for each particle against nearby particles
+        const updatedParticle = rule(particle, getNearbyParticles(particle, data), data);
+        updatedParticles.push(updatedParticle);
     }
     postMessage(updatedParticles);
 }
@@ -43,7 +53,7 @@ function calculateForce(a, b, g, data) {
     const dy = a.wy - b.wy;
     const dSquared = dx * dx + dy * dy; // square of distance between particles
     if (dSquared >= 0 && dSquared < data.interactionDistanceSquared) {
-        const F = g / Math.sqrt(dSquared); // calculate F only when needed
+        const F = g / Math.sqrt(dSquared); // F (force) is inversely proportional to distance (Newton's law of universal gravitation)
         return { fx: F * dx, fy: F * dy };
     }
     return { fx: 0, fy: 0 };

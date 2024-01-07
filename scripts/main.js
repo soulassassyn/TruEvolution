@@ -33,7 +33,7 @@ function Tick(runtime)
 	FPSText.text = String(runtime.fps);
 
 	if (!runtime.Rules.isSimulating && !runtime.Rules.isLoading) {
-		protectNumberInput(runtime);
+		maxParticles(runtime, 1000);
 		protectFrictionInput(runtime);
 		protectInteractionDistanceInput(runtime);
 		sliderValueUpdate(runtime);
@@ -105,7 +105,7 @@ function sliderValueUpdate(runtime) {
     });
 }
 
-function protectNumberInput(runtime) {
+function maxParticles(runtime, max = 250) {
 	const numberInput = runtime.objects.numberInput.getAllInstances();
 
 	numberInput.forEach((input) => {
@@ -113,8 +113,8 @@ function protectNumberInput(runtime) {
 		if (number < 0) {
 			input.text = "0";
 		}
-		if (number > 250) {
-			input.text = "250";
+		if (number > max) {
+			input.text = String(max);
 		}
 	});
 }
