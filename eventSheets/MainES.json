@@ -111,7 +111,7 @@
 			"actions": [
 				{
 					"type": "script",
-					"script": "runtime.Rules.randomizeSettings();"
+					"script": "runtime.SeedLogic.randomizeSettings();"
 				}
 			],
 			"sid": 664434657069187
@@ -128,7 +128,7 @@
 			"actions": [
 				{
 					"type": "script",
-					"script": "runtime.Rules.setSeedText();"
+					"script": "runtime.SeedLogic.setSeedText();"
 				}
 			],
 			"sid": 217826765614761
@@ -198,7 +198,7 @@
 					"actions": [
 						{
 							"type": "script",
-							"script": "const seedText = runtime.objects.seedText.getFirstPickedInstance();\nruntime.Rules.loadFromHash(seedText.text);"
+							"script": "const seedText = runtime.objects.seedText.getFirstPickedInstance();\nruntime.SeedLogic.loadFromHash(seedText.text);"
 						}
 					],
 					"sid": 977783953391986

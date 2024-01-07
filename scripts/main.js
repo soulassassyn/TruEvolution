@@ -1,4 +1,5 @@
 import { Rules } from "./particleRules.js";
+import { SeedLogic } from "./seedLogic.js";
 // Import any other script files here, e.g.:
 // import * as myModule from "./mymodule.js";
 
@@ -7,6 +8,7 @@ runOnStartup(async runtime =>
 	// Code to run on the loading screen.
 	// Note layouts, objects etc. are not yet available.
 	runtime.Rules = new Rules(runtime);
+	runtime.SeedLogic = new SeedLogic(runtime);
 	
 	runtime.addEventListener("beforeprojectstart", () => OnBeforeProjectStart(runtime));
 });
@@ -189,7 +191,7 @@ function settingParametersUpdate(runtime) {
 		
 		runtime.Rules[setting] = value;
 	});
-	runtime.Rules.updateInteractionDistanceSquared();
+	runtime.SeedLogic.updateInteractionDistanceSquared();
 }
 
 // Load functions
