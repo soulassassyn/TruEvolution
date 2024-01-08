@@ -24,6 +24,7 @@ export class Rules {
         this.vheight = this.runtime.viewportHeight;
         this.gridWidth = Math.ceil(this.vwidth / this.interactionDistance);
         this.gridHeight = Math.ceil(this.vheight / this.interactionDistance);
+        this.gridSize = this.gridWidth * this.gridHeight;
         // Data structures for GPU
         this.stride = 7; // Number of variables per particle, used to calculate the location in the flattened particleDataForGPU array
         this.particleDataForGPU = null;
@@ -57,7 +58,15 @@ export class Rules {
             }
             this.grid[cell].push(particle);
         });
-        console.log(this.grid);
+        this.fillBlankGridCells();
+    }
+
+    fillBlankGridCells() {
+        for (let i = 0; i < this.gridSize; i++) {
+            if (!this.grid[i]) {
+                this.grid[i] = [];
+            }
+        }
     }
 
     async initializeDataStructures() {
@@ -65,7 +74,7 @@ export class Rules {
         this.particleDataForGPU = new Float32Array(numberOfPartciles * this.stride);
         this.particleDataFromGPU = new Float32Array(numberOfPartciles * this.stride);
         this.gridDataForGPU = new Int32Array(this.interactionDistance * this.interactionDistance * numberOfPartciles); // gridWidth and gridHeight are the number of cells in a row and column respectively, particlesPerCell is the max number of particles you expect in a cell
-        this.gridStartIndices = new Int16Array(this.gridWidth * this.gridHeight); // this is the total grid size, so the total number of start indices is the total number of cells
+        this.gridStartIndices = new Int16Array(this.gridSize);
         this.ruleSetForGPU = new Int8Array(16);
     }
 
@@ -101,11 +110,17 @@ export class Rules {
     }
 
     packageGridStartIndicesForGPU() {
-        for (let i = 0; i < this.grid.length; i++) {
-            const cell = this.grid[i];
-            const startIndex = cell.startIndex;
-            this.gridStartIndices[i] = startIndex;
-        }
+        console.log("packageGridStartIndicesForGPU")
+        let startingIndex = 0;
+        console.log(this.grid);
+        Object.keys(this.grid).forEach((cellIndex, index) => {
+            console.log("cellIndex", cellIndex, "index", index);
+            const cell = this.grid[cellIndex];
+            const length = cell.length;
+            this.gridStartIndices[index] = startingIndex;
+            startingIndex += length;
+        });
+        console.log(this.gridStartIndices);
     }
 
     // Only called once at the start of the simulation as the ruleSet doesn't change during the simulation
