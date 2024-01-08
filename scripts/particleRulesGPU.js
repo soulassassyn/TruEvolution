@@ -6,13 +6,6 @@ export class Rules {
         this.isLoading = false;
         this.particlesArray = [];
         this.particleMap = new Map();
-        this.particles = {};
-        // this.particles = {
-        //     blue: [],
-        //     red: [],
-        //     yellow: [],
-        //     green: [],
-        // };
         this.grid = {};
         this.colorValues = {
             blue: 0.1,
@@ -47,122 +40,130 @@ export class Rules {
                 yellow: 0,
             },
         }
-
+        
         this.interactionDistance = 150,
         this.friction = 0.5,
         this.interactionDistanceSquared = this.interactionDistance * this.interactionDistance;
         this.vwidth = this.runtime.viewportWidth;
         this.vheight = this.runtime.viewportHeight;
-
-        this.worker1 = new Worker("./workerRule.js");
-        this.worker2 = new Worker("./workerRule.js");
-        this.worker3 = new Worker("./workerRule.js");
-        this.worker4 = new Worker("./workerRule.js");
     }
 
     update() {
         if (!this.isSimulating) return;
-
+    
         // Update the grid with the current particles
-        this.updateGrid(this.particlesArray);
+        this.updateGrid(this.particles);
 
-        // Package the data for the worker
-        const data = this.packageData();
-        const [ particles1, particles2, particles3, particles4 ] = this.splitParticles(4);
-
-        // Post the data to the workers
-        this.worker1.postMessage([ data, particles1 ]);
-        this.worker2.postMessage([ data, particles2 ]);
-        this.worker3.postMessage([ data, particles3 ]);
-        this.worker4.postMessage([ data, particles4 ]);
-
-        // Listen for messages from the workers
-        this.worker1.onmessage = (e) => {
-            const updatedParticles = e.data;
-            this.workerUpdateParticles(updatedParticles);
-        }
-        this.worker2.onmessage = (e) => {
-            const updatedParticles = e.data;
-            this.workerUpdateParticles(updatedParticles);
-        }
-        this.worker3.onmessage = (e) => {
-            const updatedParticles = e.data;
-            this.workerUpdateParticles(updatedParticles);
-        }
-        this.worker4.onmessage = (e) => {
-            const updatedParticles = e.data;
-            this.workerUpdateParticles(updatedParticles);
+        // Iterate over each particle in the segment
+        for (let i = 0; i < this.particlesArray.length; i++) {
+            const particle = this.particlesArray[i];
+            // Execute the rule for each particle against nearby particles
+            this.rule(particle, this.getNearbyParticles(particle));
         }
     }
 
-    packageData() {
-        const data = {
-            ruleSet: this.ruleSet,
-            interactionDistance: this.interactionDistance,
-            interactionDistanceSquared: this.interactionDistanceSquared,
-            grid: this.grid,
+    // Get particles in the nearby cells including the cell of the current particle
+    getNearbyParticles(particle) {
+        const gridSize = this.interactionDistance;
+        const nearbyParticles = [];
+        const x = Math.floor(particle.x / gridSize);
+        const y = Math.floor(particle.y / gridSize);
+        
+        // Check the surrounding cells including the particle's own cell
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                const key = `${x + dx}_${y + dy}`;
+                if (this.grid[key]) {
+                    nearbyParticles.push(...this.grid[key]);
+                }
+            }
         }
-        return data;
+        return nearbyParticles;
     }
 
-    splitParticles(split) {
-        const particles = this.particlesArray;
-        const numberOfPartciles = particles.length;
-        const numberOfParticlesPerWorker = Math.floor(numberOfPartciles / split);
-        const particles1 = [];
-        const particles2 = [];
-        const particles3 = [];
-        const particles4 = [];
+    // Logic for simulation, p1 is a single particle, nearbyParticles are the particles to check against
+    rule(particle, nearbyParticles) {
+        let a = particle; // particle a
+        
+        // Calculate force with nearby particles
+        nearbyParticles.forEach((b) => { // particle b
+            if (a === b) return; // Skip interaction with itself
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const dSquared = dx * dx + dy * dy;
+            const distance = Math.sqrt(dSquared);
+            const dCalcs = { dx, dy, dSquared, distance };
 
-        for (let i = 0; i < numberOfParticlesPerWorker; i++) {
-            particles1.push(particles[i]);
-        }
-        for (let i = numberOfParticlesPerWorker; i < numberOfParticlesPerWorker * 2; i++) {
-            particles2.push(particles[i]);
-        }
-        for (let i = numberOfParticlesPerWorker * 2; i < numberOfParticlesPerWorker * 3; i++) {
-            particles3.push(particles[i]);
-        }
-        for (let i = numberOfParticlesPerWorker * 3; i < numberOfPartciles; i++) {
-            particles4.push(particles[i]);
-        }
-
-        return [ particles1, particles2, particles3, particles4 ];
-    }
-
-    workerUpdateParticles(updatedParticles) {
-        for (let i = 0; i < updatedParticles.length; i++) {
-            const particle = updatedParticles[i];
-            let index = this.particleMap.get(particle.id);
-            let a = this.particlesArray[index];
-            a.x = particle.wx;
-            a.y = particle.wy;
-            a.vx = particle.vx;
-            a.vy = particle.vy;
-            let fx = particle.fx;
-            let fy = particle.fy;
+            // Resolve collision if any
+            this.resolveCollision(a, b, dCalcs);
             
-            // Update velocity and position
-            a.vx = (a.vx + fx) * this.friction;
-            a.vy = (a.vy + fy) * this.friction;
+            // Retrieve the gravity constant from the ruleSet using color property
+            let gravityConstant = this.ruleSet[a.color][b.color];
+            
+            const force = this.calculateForce(gravityConstant, dCalcs);
+            a.fx += force.fx;
+            a.fy += force.fy;
+        });
+        this.updateParticlePosition(a);
+    }
+
+    // Collision detection and resolution function
+    resolveCollision(a, b, dCalcs) {
+        const minDistance = 2; // Since each particle has a size of 2x2
+        const { dx, dy, dSquared, distance } = dCalcs;
+        // Check for collision
+        if (distance < minDistance && distance > 0) {
+            // Calculate overlap
+            const overlap = 0.5 * (minDistance - distance);
+            
+            // Calculate the displacement needed for each particle along the line of centers
+            const displacementX = overlap * (dx / distance);
+            const displacementY = overlap * (dy / distance);
+            
+            // Adjust positions to resolve collision
+            a.x += displacementX;
+            a.y += displacementY;
+            b.x -= displacementX;
+            b.y -= displacementY;
+        }
+    }
+
+    // Calculate the force between two particles
+    calculateForce(gravityConstant, dCalcs) {
+        const { dx, dy, dSquared, distance } = dCalcs;
+        if (dSquared >= 0 && dSquared < this.interactionDistanceSquared) {
+            const F = gravityConstant / distance; // F (force) is inversely proportional to distance (Newton's law of universal gravitation)
+            return { fx: F * dx, fy: F * dy };
+        }
+        return { fx: 0, fy: 0 };
+    }
+
+    updateParticlePosition(particle) {
+        const a = particle;
+        // Update velocity and position
+        a.vx = (a.vx + a.fx) * this.friction;
+        a.vy = (a.vy + a.fy) * this.friction;
+        a.x += a.vx;
+        a.y += a.vy;
+        
+        // Bounce off walls by ensuring particles are within bounds and adjusting velocity
+        if (a.x <= 0) {
+            // a.x = -a.x; // Reflect position from the boundary
+            a.vx *= -1; // Reverse velocity
             a.x += a.vx;
+        } else if (a.x >= this.vwidth) {
+            // a.x = 2 * this.vwidth - a.x; // Reflect position from the boundary
+            a.vx *= -1; // Reverse velocity
+            a.x += a.vx;
+        }
+        if (a.y <= 0) {
+            // a.y = -a.y; // Reflect position from the boundary
+            a.vy *= -1; // Reverse velocity
             a.y += a.vy;
-            
-            // Bounce off walls by ensuring particles are within bounds and adjusting velocity
-            if (a.x <= 0) {
-                a.x = -a.x; // Reflect position from the boundary
-                a.vx *= -1; // Reverse velocity
-            } else if (a.x >= this.vwidth) {
-                a.x = 2 * this.vwidth - a.x; // Reflect position from the boundary
-                a.vx *= -1; // Reverse velocity
-            }
-            if (a.y <= 0) {
-                a.y = -a.y; // Reflect position from the boundary
-                a.vy *= -1; // Reverse velocity
-            } else if (a.y >= this.vheight) {
-                a.y = 2 * this.vheight - a.y; // Reflect position from the boundary
-                a.vy *= -1; // Reverse velocity
-            }
+        } else if (a.y >= this.vheight) {
+            // a.y = 2 * this.vheight - a.y; // Reflect position from the boundary
+            a.vy *= -1; // Reverse velocity
+            a.y += a.vy;
         }
     }
 
@@ -172,7 +173,6 @@ export class Rules {
             let number = this.createdColors[color];
             this.create(number, color);
         }
-        this.mapParticles(); // Map the particles to the particleMap for fast lookup later
     }
     
     create(number, color) {
@@ -186,21 +186,12 @@ export class Rules {
             particle.effects[0].setParameter(0, this.colorValues[color]);
             particle.vx = 0;
             particle.vy = 0;
-            particle.wx = x; // X variable for the worker
-            particle.wy = y; // Y variable for the worker
             particle.fx = 0; // force in x direction
             particle.fy = 0; // force in y direction
-            particle.id = particle.uid;
             particle.color = color;
 
             this.particlesArray.push(particle);
         }
-    }
-
-    mapParticles() {
-        this.particlesArray.forEach((particle, index) => {
-            this.particleMap.set(particle.uid, index);
-        });
     }
     
     random(number) {
@@ -214,8 +205,8 @@ export class Rules {
         
         for (let i = 0; i < this.particlesArray.length; i++) {
             const particle = this.particlesArray[i];
-            particle.wx = particle.x; // Update wx variable for the worker
-            particle.wy = particle.y; // Update wy variable for the worker
+            particle.x = particle.x; // Update x variable for the worker
+            particle.y = particle.y; // Update y variable for the worker
             const x = Math.floor(particle.x / gridSize);
             const y = Math.floor(particle.y / gridSize);
             const key = `${x}_${y}`; // Unique key for the grid cell
@@ -244,25 +235,6 @@ export class Rules {
 }
 
 // OLD LOGIC
-
-// update() {
-    //     if (!this.isSimulating) return;
-    
-    //     // Update the grid with the current particles
-    //     this.updateGrid(this.particles);
-    
-    //     // Iterate over each cell in the grid
-    //     for (let key in this.grid) {
-        //         const particlesInCell = this.grid[key];
-
-        //         // Iterate over each particle in the cell
-        //         for (let i = 0; i < particlesInCell.length; i++) {
-            //             const particle = particlesInCell[i];
-//             // Execute the rule for each particle against nearby particles
-//             this.rule(particle, this.getNearbyParticles(particle, this.interactionDistance));
-//         }
-//     }
-// }
 
 // update() {
     //     if (!this.isSimulating) return;

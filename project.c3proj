@@ -3,7 +3,7 @@
 	"savedWithRelease": 36802,
 	"name": "Truevolution",
 	"runtime": "c3",
-	"useWorker": "auto",
+	"useWorker": "dom",
 	"bundleAddons": false,
 	"usedAddons": [
 		{
@@ -171,6 +171,38 @@
 					"name": "seedLogic.js",
 					"type": "application/javascript",
 					"sid": 696038825377770,
+					"script-info": {
+						"purpose": "none"
+					}
+				},
+				{
+					"name": "scriptLoad.js",
+					"type": "application/javascript",
+					"sid": 722011666480435,
+					"script-info": {
+						"purpose": "none"
+					}
+				},
+				{
+					"name": "gpu-browser.js",
+					"type": "application/javascript",
+					"sid": 704095002300131,
+					"script-info": {
+						"purpose": "none"
+					}
+				},
+				{
+					"name": "gpu-browser.min.js",
+					"type": "application/javascript",
+					"sid": 145585142828584,
+					"script-info": {
+						"purpose": "none"
+					}
+				},
+				{
+					"name": "particleRulesGPU.js",
+					"type": "application/javascript",
+					"sid": 650214097010523,
 					"script-info": {
 						"purpose": "none"
 					}

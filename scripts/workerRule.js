@@ -1,22 +1,7 @@
 onmessage = function(fullData) {
     let data = fullData.data[0];
-    // let gridSegment = fullData.data[1];
     let particleSegment = fullData.data[1];
-
-    // // Iterate over each cell in the grid
-    // let updatedParticles = [];
-    // for (let key in gridSegment) {
-    //     const particlesInCell = gridSegment[key];
-
-    //     // Iterate over each particle in the cell
-    //     for (let i = 0; i < particlesInCell.length; i++) {
-    //         const particle = particlesInCell[i];
-    //         // Execute the rule for each particle against nearby particles
-    //         const updatedParticle = rule(particle, getNearbyParticles(particle, data), data);
-    //         updatedParticles.push(updatedParticle);
-    //     }
-    // }
-
+    
     // Iterate over each particle in the segment
     let updatedParticles = [];
     for (let i = 0; i < particleSegment.length; i++) {
