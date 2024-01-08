@@ -360,6 +360,26 @@
 					"sid": 750103664635322
 				}
 			]
+		},
+		{
+			"eventType": "block",
+			"conditions": [
+				{
+					"id": "on-key-pressed",
+					"objectClass": "Keyboard",
+					"sid": 479934152655691,
+					"parameters": {
+						"key": 70
+					}
+				}
+			],
+			"actions": [
+				{
+					"type": "script",
+					"script": "runtime.Rules.packageParticleDataForGPU();"
+				}
+			],
+			"sid": 556167465382790
 		}
 	],
 	"sid": 963435812412227

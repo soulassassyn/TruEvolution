@@ -13,6 +13,12 @@ export class Rules {
             yellow: 0.65,
             green: 0.8,
         }
+        this.colorToIndex = {
+            blue: 0,
+            red: 1,
+            yellow: 2,
+            green: 3,
+        }
         this.createdColors = {};
         this.ruleSet = {
             blue: {
@@ -47,7 +53,8 @@ export class Rules {
         this.vwidth = this.runtime.viewportWidth;
         this.vheight = this.runtime.viewportHeight;
 
-        this.updateParticles = null;
+        this.loopThroughAllParticles = null;
+        this.particleDataForGPU = null;
     }
 
     update() {
@@ -55,39 +62,42 @@ export class Rules {
     
         // Update the grid with the current particles
         this.updateGrid(this.particles);
+        // this.packageParticleDataForGPU();
 
         let updatedParticles = [];
         // Iterate over each particle in the segment
         for (let i = 0; i < this.particlesArray.length; i++) {
             const particle = this.particlesArray[i];
             // Execute the rule for each particle against nearby particles
-            updatedParticles.push(this.rule(particle, this.getNearbyParticles(particle)));
+            // updatedParticles.push(this.rule(particle, this.getNearbyParticles(particle)));
         }
-        this.updateParticleData(updatedParticles);
+        // this.updateParticleData(updatedParticles);
     }
 
     packageParticleDataForGPU() {
-        let particleData = new Float32Array(5 * this.particlesArray.length);
-        
+        this.particleDataForGPU = new Float32Array(this.particlesArray.length * 8);
+
         for (let i = 0; i < this.particlesArray.length; i++) {
             const particle = this.particlesArray[i];
-            let id = particleData.subarray(i * 5, i * 5 + 5);
-            id[0] = particle.x;
-            id[1] = particle.y;
-            id[2] = particle.vx;
-            id[3] = particle.vy;
-            id[4] = this.ruleSet[particle.color];
+            this.particleDataForGPU[i * 8] = particle.x;
+            this.particleDataForGPU[i * 8 + 1] = particle.y;
+            this.particleDataForGPU[i * 8 + 2] = particle.vx;
+            this.particleDataForGPU[i * 8 + 3] = particle.vy;
+            this.particleDataForGPU[i * 8 + 4] = particle.fx;
+            this.particleDataForGPU[i * 8 + 5] = particle.fy;
+            this.particleDataForGPU[i * 8 + 6] = this.colorToIndex[particle.color];
+            this.particleDataForGPU[i * 8 + 7] = particle.id;
         }
-        console.log(particleData);
+        console.log(this.particleDataForGPU);
     }
 
     initializeKernels() {
         const numberOfParticles = this.particlesArray.length;
-        this.updateParticles = this.runtime.gpu.createKernel(function(particles) {
+        this.loopThroughAllParticles = this.runtime.gpu.createKernel(function(particleDataForGPU) {
             let updatedParticles = [];
             // Iterate over each particle in the segment
-            for (let i = 0; i < particles.length; i++) {
-                const particle = particles[i];
+            for (let i = 0; i < particleDataForGPU.length; i++) {
+                const particle = particleDataForGPU[i];
                 // Execute the rule for each particle against nearby particles
                 updatedParticles.push(this.rule(particle, this.getNearbyParticles(particle)));
             }
@@ -237,6 +247,7 @@ export class Rules {
             const particle = this.runtime.objects.particle.createInstance(this.layer, x, y);
             particle.effects[0].isActive = true;
             particle.effects[0].setParameter(0, this.colorValues[color]);
+            particle.id = particle.uid;
             particle.vx = 0; // velocity in x direction
             particle.vy = 0; // velocity in y direction
             particle.fx = 0; // force in x direction
