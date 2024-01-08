@@ -51,9 +51,9 @@ function Tick(runtime)
 		sliderValueUpdate(runtime);
 		sliderEnabledUpdate(runtime);
 		settingParametersUpdate(runtime);
-	} else if (runtime.Rules.isSimulating) {
+	} else if (runtime.Rules.isSimulating && !runtime.Rules.isLoading) {
 		runtime.Rules.update();
-	} else if (runtime.Rules.isLoading) {
+	} else if (!runtime.Rules.isSimulating && runtime.Rules.isLoading) {
 		loadNumberInputValues(runtime);
 		loadSliderValues(runtime);
 		loadSettingValues(runtime);
