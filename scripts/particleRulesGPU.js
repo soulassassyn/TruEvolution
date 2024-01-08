@@ -28,6 +28,7 @@ export class Rules {
         this.stride = 7; // Number of variables per particle, used to calculate the location in the flattened particleDataForGPU array
         this.particleDataForGPU = null;
         this.particleDataFromGPU = null;
+        this.gridStartIndices = null;
         this.gridDataForGPU = null;
         this.ruleSetForGPU = null;
     }
@@ -64,12 +65,14 @@ export class Rules {
         this.particleDataForGPU = new Float32Array(numberOfPartciles * this.stride);
         this.particleDataFromGPU = new Float32Array(numberOfPartciles * this.stride);
         this.gridDataForGPU = new Int32Array(this.interactionDistance * this.interactionDistance * numberOfPartciles); // gridWidth and gridHeight are the number of cells in a row and column respectively, particlesPerCell is the max number of particles you expect in a cell
+        this.gridStartIndices = new Int16Array(this.gridWidth * this.gridHeight); // this is the total grid size, so the total number of start indices is the total number of cells
         this.ruleSetForGPU = new Int8Array(16);
     }
 
     packageAllDataForGPU() {
         this.packageParticleDataForGPU();
-        this.packageGridForGPU(this.grid);
+        this.packageGridForGPU();
+        this.packageGridStartIndicesForGPU();
     }
 
     packageParticleDataForGPU() {
@@ -85,15 +88,23 @@ export class Rules {
         }
     }
 
-    packageGridForGPU(gridData) {
-        for (let i = 0; i < gridData.length; i++) {
-            const cell = gridData[i];
+    packageGridForGPU() {
+        for (let i = 0; i < this.grid.length; i++) {
+            const cell = this.grid[i];
             const startIndex = cell.startIndex;
             const endIndex = cell.endIndex;
             const cellIndex = i * particlesPerCell;
             for (let j = startIndex; j < endIndex; j++) {
                 this.gridDataForGPU[cellIndex + j] = j;
             }
+        }
+    }
+
+    packageGridStartIndicesForGPU() {
+        for (let i = 0; i < this.grid.length; i++) {
+            const cell = this.grid[i];
+            const startIndex = cell.startIndex;
+            this.gridStartIndices[i] = startIndex;
         }
     }
 
