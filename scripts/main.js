@@ -13,15 +13,15 @@ runOnStartup(async runtime =>
 	runtime.SeedLogic = new SeedLogic(runtime);
 
 	// Load any scripts that need to be loaded before the project starts,
-	// loadScript(runtime, "./gpu-browser.min.js").then(() => {
-	// 	// console.log(window.GPU);
-	// 	runtime.gpu = new window.GPU.GPU();
-	// }).catch((error) => {
-	// 	console.error("Failed to load the script:", error);
-	// });
+	loadScript(runtime, "./gpu-browser.min.js").then(() => {
+		// console.log(window.GPU);
+		runtime.gpu = new window.GPU.GPU();
+	}).catch((error) => {
+		console.error("Failed to load the script:", error);
+	});
 
 	
-	runtime.addEventListener("beforeprojectstart", () => OnBeforeProjectStart(runtime));
+	// runtime.addEventListener("beforeprojectstart", () => OnBeforeProjectStart(runtime));
 });
 
 async function OnBeforeProjectStart(runtime)
@@ -30,7 +30,7 @@ async function OnBeforeProjectStart(runtime)
 	// the first layout. Loading has finished and initial
 	// instances are created and available to use here.
 	createSliders(runtime);
-	// gpuTest(runtime);
+	gpuTest(runtime);
 	
 	runtime.addEventListener("tick", () => Tick(runtime));
 }
@@ -43,21 +43,16 @@ function Tick(runtime)
 
 	const FPSText = runtime.objects.FPSText.getFirstInstance();
 	FPSText.text = String(runtime.fps);
-	let loopCount = 0;
 
 	if (!runtime.Rules.isSimulating && !runtime.Rules.isLoading) {
-		maxParticles(runtime, 600);
+		maxParticles(runtime, 800);
 		protectFrictionInput(runtime);
 		protectInteractionDistanceInput(runtime);
 		sliderValueUpdate(runtime);
 		sliderEnabledUpdate(runtime);
 		settingParametersUpdate(runtime);
 	} else if (runtime.Rules.isSimulating) {
-		// Update every other frame
-		if (loopCount % 2 == 0) {
-			runtime.Rules.update();
-		}
-		loopCount++;
+		runtime.Rules.update();
 	} else if (runtime.Rules.isLoading) {
 		loadNumberInputValues(runtime);
 		loadSliderValues(runtime);
@@ -68,23 +63,6 @@ function Tick(runtime)
 
 function gpuTest(runtime) {
 	const gpu = runtime.gpu;
-	const add = gpu.createKernel(function(a, b) {
-		return a[this.thread.x] + b[this.thread.x];
-	}).setOutput([20]);
-
-	const multiply = gpu.createKernel(function(a, b) {
-		return a[this.thread.x] * b[this.thread.x];
-	}).setOutput([20]);
-
-	const superKernel = gpu.combineKernels(add, multiply, function(a, b, c) {
-		return multiply(add(a, b), c);
-	});
-	const a = [1, 2, 3, 4, 5];
-	const b = [6, 7, 8, 9, 10];
-	const c = [11, 12, 13, 14, 15];
-
-	const result = superKernel(a, b, c);
-	console.log(result);
 }
 
 function loadScript(runtime, scriptUrl) {
@@ -95,7 +73,7 @@ function loadScript(runtime, scriptUrl) {
         // Resolve the promise once the script is loaded
         script.onload = () => {
             resolve(script);
-			// runtime.addEventListener("beforeprojectstart", () => OnBeforeProjectStart(runtime));
+			runtime.addEventListener("beforeprojectstart", () => OnBeforeProjectStart(runtime));
         };
 
         // Reject the promise if there's an error loading the script
