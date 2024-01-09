@@ -1,136 +1,85 @@
-const physicsKernel = gpu.createKernel(function(particleData, gridData, particleIndices, gridSize, interactionDistanceSquared, ruleSet) {
-    const particleIndex = this.thread.x;
-    let x = particleData[particleIndex * 7];
-    let y = particleData[particleIndex * 7 + 1];
-    let vx = particleData[particleIndex * 7 + 2];
-    let vy = particleData[particleIndex * 7 + 3];
-    let fx = particleData[particleIndex * 7 + 4];
-    let fy = particleData[particleIndex * 7 + 5];
-    const colorIndex = particleData[particleIndex * 7 + 6];
+export class Kernels {
+    constructor(runtime) {
+        this.runtime = runtime;
+    }
+    
+    createGetParticleDataKernel(particleLength) {
+        return this.runtime.gpu.createKernel(function(particleData) {
+            const particleIndex = Math.floor(this.thread.x / 7);
+            const attributeIndex = this.thread.x % 7;
+            const dataIndex = particleIndex * 7 + attributeIndex;
 
-    // Determine grid cell of this particle
-    const gridX = Math.floor(x / gridSize);
-    const gridY = Math.floor(y / gridSize);
-    const gridWidth = Math.ceil(gridSize / 800); // 800 is the max viewport width
+            if (attributeIndex === 0) return (particleData[dataIndex] + 20);
+            if (attributeIndex === 1) return (particleData[dataIndex]);
+            if (attributeIndex === 2) return (particleData[dataIndex]);
+            if (attributeIndex === 3) return (particleData[dataIndex]);
+            if (attributeIndex === 4) return (particleData[dataIndex]);
+            if (attributeIndex === 5) return (particleData[dataIndex]);
+            if (attributeIndex === 6) return (particleData[dataIndex]);
 
-    const particlesPerCell = particleData.length / 7;
-
-    // Iterate over surrounding cells
-    for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-            // Compute linear index of the neighboring cell
-            const neighborCellIndex = (gridX + dx) + (gridY + dy) * gridWidth; // gridWidth will be the number of cells in a row
-            const startIndex = gridData[neighborCellIndex]; // Starting index in particleIndices for this cell
-
-            if (startIndex !== -1) {
-                // Iterate over particles in the neighboring cell
-                for (let offset = 0; offset < particlesPerCell; offset++) { // particlesPerCell is the max number of particles in a cell
-                    const otherParticleIndex = particleIndices[startIndex + offset];
-
-                    if (otherParticleIndex === -1) break; // No more particles in this cell
-                    if (otherParticleIndex === particleIndex) continue; // Skip self
-
-                    let ox = particleData[otherParticleIndex * 7]; // other particle's x
-                    let oy = particleData[otherParticleIndex * 7 + 1]; // other particle's y
-
-                    const dx = x - ox;
-                    const dy = y - oy;
-                    const dSquared = dx * dx + dy * dy;
-
-                    if (dSquared < interactionDistanceSquared && dSquared > 0) {
-                        const distance = Math.sqrt(dSquared);
-                        const overlap = 0.5 * (minParticleDistance - distance);
-
-                    }
-                }
-            }
-        }
+        }).setOutput([particleLength]); 
     }
 
-    return [x, y, vx, vy, fx, fy, colorIndex];
-}).setOutput([particleData.length / 7]);
-
-const updatedParticleData = physicsKernel(
-    particleDataForGPU,
-    flattenedGridData,
-    particleIndices,
-    this.interactionDistance,
-    this.interactionDistanceSquared,
-    ruleSetForGPU
-);
-
-// Kernel to update particle positions
-const updatePositionKernel = gpu.createKernel(function(particles) {
-
-    return;
-}).setOutput([particlesArray.length]);
-
-// Kernel to calculate forces between particles
-const calculateForcesKernel = gpu.createKernel(function(particles) {
-
-    return;
-}).setOutput([particlesArray.length]);
-
-// Kernel to handle collisions between particles
-const handleCollisionsKernel = gpu.createKernel(function(particles) {
-
-    return;
-}).setOutput([particlesArray.length]);
-
-const particleSimulationKernel = gpu.combineKernels(
-    updatePositionKernel,
-    calculateForcesKernel,
-    handleCollisionsKernel,
-    function(particles) {
-        // Combine the operations
-        particles = updatePositionKernel(particles);
-        particles = calculateForcesKernel(particles);
-        particles = handleCollisionsKernel(particles);
-        return particles;
+    particlePhysics(particleData) {
+        const getParticleData = this.createGetParticleDataKernel(particleData.length);
+        return getParticleData(particleData);
     }
-);
+}
 
-const finalParticles = particleSimulationKernel(initialParticles);
 
-const collisionDetectionKernel = gpu.createKernel(function(particleData, grid, gridSize, gridWidth, gridHeight) {
-    const particleIndex = this.thread.x;
-    const x = particleData[particleIndex * 4];
-    const y = particleData[particleIndex * 4 + 1];
-    // ... other particle properties ...
 
-    // Calculate grid cell indices
-    const cellX = Math.floor(x / gridSize);
-    const cellY = Math.floor(y / gridSize);
 
-    // Iterate over the same and adjacent cells
-    for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-            const checkCellX = cellX + dx;
-            const checkCellY = cellY + dy;
 
-            // Check boundaries
-            if (checkCellX < 0 || checkCellX >= gridWidth || checkCellY < 0 || checkCellY >= gridHeight) {
-                continue;
-            }
 
-            // Get start and end indices for particles in this cell
-            const startEndIndices = grid[checkCellY * gridWidth + checkCellX];
-            const startIndex = startEndIndices[0];
-            const endIndex = startEndIndices[1];
 
-            // Check for collisions with particles in this cell
-            for (let i = startIndex; i < endIndex; i++) {
-                if (i !== particleIndex) { // Skip checking against itself
-                    // Perform collision detection with particleData[i]
-                    // ...
-                }
-            }
-        }
-    }
 
-    // Return updated particle data
-    return [newX, newY, newVx, newVy]; // updated particle properties
-}).setOutput([numberOfParticles]);
+// const updatedParticleData = physicsKernel(
+//     particleDataForGPU,
+//     flattenedGridData,
+//     particleIndices,
+//     this.interactionDistance,
+//     this.interactionDistanceSquared,
+//     ruleSetForGPU
+// );
+
+// // Kernel to update particle positions
+// const updatePositionKernel = gpu.createKernel(function(particles) {
+
+//     return;
+// }).setOutput([particlesArray.length]);
+
+// // Kernel to calculate forces between particles
+// const calculateForcesKernel = gpu.createKernel(function(particles) {
+
+//     return;
+// }).setOutput([particlesArray.length]);
+
+// // Kernel to handle collisions between particles
+// const handleCollisionsKernel = gpu.createKernel(function(particles) {
+
+//     return;
+// }).setOutput([particlesArray.length]);
+
+// const particleSimulationKernel = gpu.combineKernels(
+//     updatePositionKernel,
+//     calculateForcesKernel,
+//     handleCollisionsKernel,
+//     function(particles) {
+//         // Combine the operations
+//         particles = updatePositionKernel(particles);
+//         particles = calculateForcesKernel(particles);
+//         particles = handleCollisionsKernel(particles);
+//         return particles;
+//     }
+// );
+
+// const finalParticles = particleSimulationKernel(initialParticles);
+
+
+
+
+
+
 
 
 // Reference Functions to convert to GPU

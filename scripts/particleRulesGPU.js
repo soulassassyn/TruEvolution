@@ -36,6 +36,16 @@ export class Rules {
         this.particlesPerCell = 0;
     }
     
+    async initializeDataStructures() {
+        const numberOfParticles = this.particlesArray.length;
+        this.particleDataForGPU = new Float32Array(numberOfParticles * this.stride);
+        this.particleDataFromGPU = new Float32Array(numberOfParticles * this.stride);
+        this.gridDataForGPU = new Float32Array(numberOfParticles * this.gridStride);
+        this.gridIndices = new Int16Array(this.gridSize * 2);
+        this.ruleSetForGPU = new Int8Array(16);
+        this.particlesPerCell = 0;
+    }
+
     update() {
         if (!this.isSimulating) return;
     
@@ -44,7 +54,10 @@ export class Rules {
         this.packageAllDataForGPU();
         
         // Send package to GPU
-        
+        const returnData = this.runtime.Kernels.particlePhysics(this.particleDataForGPU);
+
+        // Update particle data
+        this.updateParticleData(returnData);
     }
 
     // Update the grid for spatial hashing
@@ -60,6 +73,7 @@ export class Rules {
             }
             this.grid[cell].push(particle);
         });
+
         this.fillBlankGridCells();
     }
 
@@ -72,30 +86,21 @@ export class Rules {
         }
     }
 
-    async initializeDataStructures() {
-        const numberOfParticles = this.particlesArray.length;
-        this.particleDataForGPU = new Float32Array(numberOfParticles * this.stride);
-        this.particleDataFromGPU = new Float32Array(numberOfParticles * this.stride);
-        this.gridDataForGPU = new Float32Array(numberOfParticles * this.gridStride);
-        this.gridIndices = new Int16Array(this.gridSize * 2);
-        this.ruleSetForGPU = new Int8Array(16);
-        this.particlesPerCell = 0;
-    }
-
     packageAllDataForGPU() {
         this.packageParticleDataForGPU();
-        // this.packageGridForGPU();
-        // this.packageGridStartIndicesForGPU();
+        this.createGridIndexArrayForGPU();
     }
 
     // Package particle data in order of which cell they are in according to the grid
-    packageParticleDataForGPU() {  
+    packageParticleDataForGPU() {
+        let globalIndex = 0;
         // Iterate over each grid cell
         Object.keys(this.grid).forEach((cellIndex) => {
             const cell = this.grid[cellIndex];
             // Add each particle's properties to the flattened array
-            for (let i = 0; i < cell.length; i++) {
-                const particle = cell[i];
+            for (let currentCellIndex = 0; currentCellIndex < cell.length; currentCellIndex++) {
+                const i = globalIndex;
+                const particle = cell[currentCellIndex];
                 this.particleDataForGPU[i * this.stride] = particle.x;
                 this.particleDataForGPU[i * this.stride + 1] = particle.y;
                 this.particleDataForGPU[i * this.stride + 2] = particle.vx;
@@ -103,52 +108,28 @@ export class Rules {
                 this.particleDataForGPU[i * this.stride + 4] = particle.fx;
                 this.particleDataForGPU[i * this.stride + 5] = particle.fy;
                 this.particleDataForGPU[i * this.stride + 6] = this.colorToIndex[particle.color];
+
+                globalIndex++;
             }
         });
     }
 
-    createGridIndexArray() {
+    createGridIndexArrayForGPU() {
         // Each cell is represented by two elements (start and end index), hence gridSize * 2
         let particleIndex = 0;
     
+        // startIndex and endIndex are the indices of the first and last particle in the cell
+        // startIndex is inclusive, endIndex is exclusive
         for (let cell = 0; cell < this.gridSize; cell++) {
             const startIndex = particleIndex;
-            const endIndex = startIndex + this.grid[cell].length;
+            const endIndex = startIndex + (this.grid[cell].length * this.stride);
     
             // Assign start and end indices for each cell
             this.gridIndices[cell * 2] = startIndex;
             this.gridIndices[cell * 2 + 1] = endIndex;
     
-            particleIndex += this.grid[cell].length;
+            particleIndex += (this.grid[cell].length * this.stride);
         }
-    }
-
-    packageGridForGPU() {
-        this.particlesPerCell = 0;
-        Object.keys(this.grid).forEach((cellIndex, index) => {
-            const cell = this.grid[cellIndex];
-            const length = cell.length;
-            if (length > particlesPerCell) {
-                this.particlesPerCell = length;
-            }
-            for (let i = 0; i < length; i++) {
-                const particle = cell[i];
-                this.gridDataForGPU[index * this.gridStride + i * 3] = particle.x;
-                this.gridDataForGPU[index * this.gridStride + i * 3 + 1] = particle.y;
-                this.gridDataForGPU[index * this.gridStride + i * 3 + 2] = this.colorToIndex[particle.color];
-            }
-        });
-    }
-
-    // Array of starting indices for each grid cell so that the GPU can parse the gridDataForGPU array
-    packageGridStartIndicesForGPU() {
-        let startingIndex = 0;
-        Object.keys(this.grid).forEach((cellIndex, index) => {
-            const cell = this.grid[cellIndex];
-            const length = cell.length;
-            this.gridStartIndices[index] = startingIndex;
-            startingIndex += length;
-        });
     }
 
     // Only called once at the start of the simulation as the ruleSet doesn't change during the simulation
@@ -162,16 +143,25 @@ export class Rules {
         }
     }
 
-    updateParticleData(updatedParticles) {
-        for (let i = 0; i < updatedParticles.length; i++) {
-            const particle = updatedParticles[i];
-            let index = this.particleMap.get(particle.id);
-            let a = this.particlesArray[index];
-            a.x = particle.wx;
-            a.y = particle.wy;
-            a.vx = particle.vx;
-            a.vy = particle.vy;
-        }
+    updateParticleData(returnData) {
+        let globalIndex = 0;
+        // Iterate over each grid cell
+        Object.keys(this.grid).forEach((cellIndex) => {
+            const cell = this.grid[cellIndex];
+            // Add each particle's properties to the flattened array
+            for (let currentCellIndex = 0; currentCellIndex < cell.length; currentCellIndex++) {
+                const i = globalIndex;
+                const particle = cell[currentCellIndex];
+                particle.x = returnData[i * this.stride];
+                particle.y = returnData[i * this.stride + 1];
+                particle.vx = returnData[i * this.stride + 2];
+                particle.vy = returnData[i * this.stride + 3];
+                particle.fx = returnData[i * this.stride + 4];
+                particle.fy = returnData[i * this.stride + 5];
+
+                globalIndex++;
+            }
+        });
     }
 
     async createAllColors() {

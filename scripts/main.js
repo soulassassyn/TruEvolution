@@ -1,6 +1,7 @@
 // import { Rules } from "./particleRules.js";
 import { Rules } from "./particleRulesGPU.js";
 import { SeedLogic } from "./seedLogic.js";
+import { Kernels } from "./kernels.js";
 
 // Import any other script files here, e.g.:
 // import * as myModule from "./mymodule.js";
@@ -11,6 +12,7 @@ runOnStartup(async runtime =>
 	// Note layouts, objects etc. are not yet available.
 	runtime.Rules = new Rules(runtime);
 	runtime.SeedLogic = new SeedLogic(runtime);
+	runtime.Kernels = new Kernels(runtime);
 
 	// Load any scripts that need to be loaded before the project starts,
 	loadScript(runtime, "./gpu-browser.min.js").then(() => {
