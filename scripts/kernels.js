@@ -92,6 +92,46 @@ const particleSimulationKernel = gpu.combineKernels(
 
 const finalParticles = particleSimulationKernel(initialParticles);
 
+const collisionDetectionKernel = gpu.createKernel(function(particleData, grid, gridSize, gridWidth, gridHeight) {
+    const particleIndex = this.thread.x;
+    const x = particleData[particleIndex * 4];
+    const y = particleData[particleIndex * 4 + 1];
+    // ... other particle properties ...
+
+    // Calculate grid cell indices
+    const cellX = Math.floor(x / gridSize);
+    const cellY = Math.floor(y / gridSize);
+
+    // Iterate over the same and adjacent cells
+    for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+            const checkCellX = cellX + dx;
+            const checkCellY = cellY + dy;
+
+            // Check boundaries
+            if (checkCellX < 0 || checkCellX >= gridWidth || checkCellY < 0 || checkCellY >= gridHeight) {
+                continue;
+            }
+
+            // Get start and end indices for particles in this cell
+            const startEndIndices = grid[checkCellY * gridWidth + checkCellX];
+            const startIndex = startEndIndices[0];
+            const endIndex = startEndIndices[1];
+
+            // Check for collisions with particles in this cell
+            for (let i = startIndex; i < endIndex; i++) {
+                if (i !== particleIndex) { // Skip checking against itself
+                    // Perform collision detection with particleData[i]
+                    // ...
+                }
+            }
+        }
+    }
+
+    // Return updated particle data
+    return [newX, newY, newVx, newVy]; // updated particle properties
+}).setOutput([numberOfParticles]);
+
 
 // Reference Functions to convert to GPU
 

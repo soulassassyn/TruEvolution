@@ -27,11 +27,13 @@ export class Rules {
         this.gridSize = this.gridWidth * this.gridHeight;
         // Data structures for GPU
         this.stride = 7; // Number of variables per particle, used to calculate the location in the flattened particleDataForGPU array
+        this.gridStride = 3; // Number of variables per grid cell, used to calculate the location in the flattened gridDataForGPU array
         this.particleDataForGPU = null;
         this.particleDataFromGPU = null;
         this.gridStartIndices = null;
         this.gridDataForGPU = null;
         this.ruleSetForGPU = null;
+        this.particlesPerCell = 0;
     }
     
     update() {
@@ -61,6 +63,7 @@ export class Rules {
         this.fillBlankGridCells();
     }
 
+    // Fill in blank cells in the grid, this is necesary for correctly mapping indices for the GPU to use later
     fillBlankGridCells() {
         for (let i = 0; i < this.gridSize; i++) {
             if (!this.grid[i]) {
@@ -70,57 +73,82 @@ export class Rules {
     }
 
     async initializeDataStructures() {
-        const numberOfPartciles = this.particlesArray.length;
-        this.particleDataForGPU = new Float32Array(numberOfPartciles * this.stride);
-        this.particleDataFromGPU = new Float32Array(numberOfPartciles * this.stride);
-        this.gridDataForGPU = new Int32Array(this.interactionDistance * this.interactionDistance * numberOfPartciles); // gridWidth and gridHeight are the number of cells in a row and column respectively, particlesPerCell is the max number of particles you expect in a cell
-        this.gridStartIndices = new Int16Array(this.gridSize);
+        const numberOfParticles = this.particlesArray.length;
+        this.particleDataForGPU = new Float32Array(numberOfParticles * this.stride);
+        this.particleDataFromGPU = new Float32Array(numberOfParticles * this.stride);
+        this.gridDataForGPU = new Float32Array(numberOfParticles * this.gridStride);
+        this.gridIndices = new Int16Array(this.gridSize * 2);
         this.ruleSetForGPU = new Int8Array(16);
+        this.particlesPerCell = 0;
     }
 
     packageAllDataForGPU() {
         this.packageParticleDataForGPU();
-        this.packageGridForGPU();
-        this.packageGridStartIndicesForGPU();
+        // this.packageGridForGPU();
+        // this.packageGridStartIndicesForGPU();
     }
 
-    packageParticleDataForGPU() {
-        for (let i = 0; i < this.particlesArray.length; i++) {
-            const particle = this.particlesArray[i];
-            this.particleDataForGPU[i * this.stride] = particle.x;
-            this.particleDataForGPU[i * this.stride + 1] = particle.y;
-            this.particleDataForGPU[i * this.stride + 2] = particle.vx;
-            this.particleDataForGPU[i * this.stride + 3] = particle.vy;
-            this.particleDataForGPU[i * this.stride + 4] = particle.fx;
-            this.particleDataForGPU[i * this.stride + 5] = particle.fy;
-            this.particleDataForGPU[i * this.stride + 6] = this.colorToIndex[particle.color];
+    // Package particle data in order of which cell they are in according to the grid
+    packageParticleDataForGPU() {  
+        // Iterate over each grid cell
+        Object.keys(this.grid).forEach((cellIndex) => {
+            const cell = this.grid[cellIndex];
+            // Add each particle's properties to the flattened array
+            for (let i = 0; i < cell.length; i++) {
+                const particle = cell[i];
+                this.particleDataForGPU[i * this.stride] = particle.x;
+                this.particleDataForGPU[i * this.stride + 1] = particle.y;
+                this.particleDataForGPU[i * this.stride + 2] = particle.vx;
+                this.particleDataForGPU[i * this.stride + 3] = particle.vy;
+                this.particleDataForGPU[i * this.stride + 4] = particle.fx;
+                this.particleDataForGPU[i * this.stride + 5] = particle.fy;
+                this.particleDataForGPU[i * this.stride + 6] = this.colorToIndex[particle.color];
+            }
+        });
+    }
+
+    createGridIndexArray() {
+        // Each cell is represented by two elements (start and end index), hence gridSize * 2
+        let particleIndex = 0;
+    
+        for (let cell = 0; cell < this.gridSize; cell++) {
+            const startIndex = particleIndex;
+            const endIndex = startIndex + this.grid[cell].length;
+    
+            // Assign start and end indices for each cell
+            this.gridIndices[cell * 2] = startIndex;
+            this.gridIndices[cell * 2 + 1] = endIndex;
+    
+            particleIndex += this.grid[cell].length;
         }
     }
 
     packageGridForGPU() {
-        for (let i = 0; i < this.grid.length; i++) {
-            const cell = this.grid[i];
-            const startIndex = cell.startIndex;
-            const endIndex = cell.endIndex;
-            const cellIndex = i * particlesPerCell;
-            for (let j = startIndex; j < endIndex; j++) {
-                this.gridDataForGPU[cellIndex + j] = j;
+        this.particlesPerCell = 0;
+        Object.keys(this.grid).forEach((cellIndex, index) => {
+            const cell = this.grid[cellIndex];
+            const length = cell.length;
+            if (length > particlesPerCell) {
+                this.particlesPerCell = length;
             }
-        }
+            for (let i = 0; i < length; i++) {
+                const particle = cell[i];
+                this.gridDataForGPU[index * this.gridStride + i * 3] = particle.x;
+                this.gridDataForGPU[index * this.gridStride + i * 3 + 1] = particle.y;
+                this.gridDataForGPU[index * this.gridStride + i * 3 + 2] = this.colorToIndex[particle.color];
+            }
+        });
     }
 
+    // Array of starting indices for each grid cell so that the GPU can parse the gridDataForGPU array
     packageGridStartIndicesForGPU() {
-        console.log("packageGridStartIndicesForGPU")
         let startingIndex = 0;
-        console.log(this.grid);
         Object.keys(this.grid).forEach((cellIndex, index) => {
-            console.log("cellIndex", cellIndex, "index", index);
             const cell = this.grid[cellIndex];
             const length = cell.length;
             this.gridStartIndices[index] = startingIndex;
             startingIndex += length;
         });
-        console.log(this.gridStartIndices);
     }
 
     // Only called once at the start of the simulation as the ruleSet doesn't change during the simulation
