@@ -1,33 +1,82 @@
 export class Kernels {
-    constructor(runtime) {
+    constructor(runtime, particleDataLength) {
         this.runtime = runtime;
+        this.initializeKernels(particleDataLength);
+        this.outputTest();
+
+    }
+
+    outputTest() {
+        this.outputTest = this.runtime.gpu.createKernel(function() {
+            return this.thread.x + this.thread.y;
+        }).setOutput([10, 2]);
+    }
+
+    runOutputTest() {
+        return this.outputTest();
     }
     
-    createGetParticleDataKernel(particleLength) {
-        return this.runtime.gpu.createKernel(function(particleData) {
-            const particleIndex = Math.floor(this.thread.x / 7);
-            const attributeIndex = this.thread.x % 7;
-            const dataIndex = particleIndex * 7 + attributeIndex;
+    initializeKernels(particleDataLength) {
+        // Kernel to get particle data
+        this.getParticleData = this.runtime.gpu.createKernel(function(particleData, stride, gridSize, gridHeight, gridIndices, ruleSetForGPU) {
+            const particleIndex = Math.floor(this.thread.x / stride);
+            const attributeIndex = this.thread.x % stride;
+            const baseIndex = particleIndex * stride;
+            const dataIndex = baseIndex + attributeIndex;
+            let particleX = particleData[baseIndex + 0];
+            let particleY = particleData[baseIndex + 1];
+            let particleVx = particleData[baseIndex + 2];
+            let particleVy = particleData[baseIndex + 3];
+            let cell = Math.floor(particleX / gridSize) + (Math.floor(particleY / gridSize) * gridHeight);
 
-            if (attributeIndex === 0) return (particleData[dataIndex] + 20);
-            if (attributeIndex === 1) return (particleData[dataIndex]);
-            if (attributeIndex === 2) return (particleData[dataIndex]);
-            if (attributeIndex === 3) return (particleData[dataIndex]);
-            if (attributeIndex === 4) return (particleData[dataIndex]);
-            if (attributeIndex === 5) return (particleData[dataIndex]);
-            if (attributeIndex === 6) return (particleData[dataIndex]);
+            if (attributeIndex === 0) return (particleData[dataIndex]); // x
+            if (attributeIndex === 1) return (particleData[dataIndex]); // y
+            if (attributeIndex === 2) return (particleData[dataIndex]); // vx
+            if (attributeIndex === 3) return (particleData[dataIndex]); // vy
+            if (attributeIndex === 4) return (particleData[dataIndex]); // fx 
+            if (attributeIndex === 5) return (particleData[dataIndex]); // fy
+            if (attributeIndex === 6) return (particleData[dataIndex]); // color
 
-        }).setOutput([particleLength]); 
-    }
+        }).setOutput([particleDataLength]); 
 
-    particlePhysics(particleData) {
-        const getParticleData = this.createGetParticleDataKernel(particleData.length);
-        return getParticleData(particleData);
+        // Kernel to update particle positions
+        this.calculateForces = this.runtime.gpu.createKernel(function(particleData, gridData, cellParticleCounts, MAX_PARTICLES_PER_CELL) {
+            const particleIndex = this.thread.x;
+            const dataIndex = particleIndex * 7; // Assuming 7 properties per particle
+            const x = particleData[dataIndex];
+            const y = particleData[dataIndex + 1];
+            // ... other properties ...
+        
+            let fx = 0, fy = 0; // Forces to be calculated
+        
+            // Example: Iterate through nearby grid cells
+            for (let i = 0; i < NUM_NEARBY_CELLS; i++) {
+                const cellIndex = cellIndex; // Determine the cell index
+                const actualParticlesInCell = cellParticleCounts[cellIndex];
+        
+                for (let j = 0; j < MAX_PARTICLES_PER_CELL; j++) {
+                    if (j >= actualParticlesInCell) break; // Skip if beyond actual particle count
+        
+                    const otherParticleIndex = gridData[cellIndex * MAX_PARTICLES_PER_CELL + j];
+                    // ... calculate distance and forces ...
+                }
+            }
+        
+            // Return updated forces
+            return [fx, fy];
+        }).setOutput([particleDataLength]);
+    }       
+    
+    particlePhysics() {
+        const particleData = this.runtime.Rules.particleDataForGPU;
+        const stride = this.runtime.Rules.stride;
+        const gridSize = this.runtime.Rules.gridSize;
+        const gridHeight = this.runtime.Rules.gridHeight;
+        const gridIndices = this.runtime.Rules.gridIndices;
+        const ruleSetForGPU = this.runtime.Rules.ruleSetForGPU;
+        return this.getParticleData(particleData, stride, gridSize, gridHeight, gridIndices, ruleSetForGPU);
     }
 }
-
-
-
 
 
 

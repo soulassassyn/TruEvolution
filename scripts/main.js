@@ -1,7 +1,7 @@
 // import { Rules } from "./particleRules.js";
 import { Rules } from "./particleRulesGPU.js";
 import { SeedLogic } from "./seedLogic.js";
-import { Kernels } from "./kernels.js";
+
 
 // Import any other script files here, e.g.:
 // import * as myModule from "./mymodule.js";
@@ -12,8 +12,7 @@ runOnStartup(async runtime =>
 	// Note layouts, objects etc. are not yet available.
 	runtime.Rules = new Rules(runtime);
 	runtime.SeedLogic = new SeedLogic(runtime);
-	runtime.Kernels = new Kernels(runtime);
-
+	
 	// Load any scripts that need to be loaded before the project starts,
 	loadScript(runtime, "./gpu-browser.min.js").then(() => {
 		// console.log(window.GPU);
@@ -21,9 +20,9 @@ runOnStartup(async runtime =>
 	}).catch((error) => {
 		console.error("Failed to load the script:", error);
 	});
-
 	
-	// runtime.addEventListener("beforeprojectstart", () => OnBeforeProjectStart(runtime));
+	
+	runtime.addEventListener("beforeprojectstart", () => OnBeforeProjectStart(runtime));
 });
 
 async function OnBeforeProjectStart(runtime)
@@ -32,7 +31,7 @@ async function OnBeforeProjectStart(runtime)
 	// the first layout. Loading has finished and initial
 	// instances are created and available to use here.
 	createSliders(runtime);
-	gpuTest(runtime);
+	// gpuTest(runtime);
 	
 	runtime.addEventListener("tick", () => Tick(runtime));
 }
@@ -75,7 +74,7 @@ function loadScript(runtime, scriptUrl) {
         // Resolve the promise once the script is loaded
         script.onload = () => {
             resolve(script);
-			runtime.addEventListener("beforeprojectstart", () => OnBeforeProjectStart(runtime));
+			// runtime.addEventListener("beforeprojectstart", () => OnBeforeProjectStart(runtime));
         };
 
         // Reject the promise if there's an error loading the script

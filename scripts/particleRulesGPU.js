@@ -1,3 +1,5 @@
+import { Kernels } from "./kernels.js";
+
 export class Rules {
     constructor(runtime) {
         this.runtime = runtime;
@@ -33,7 +35,6 @@ export class Rules {
         this.gridStartIndices = null;
         this.gridDataForGPU = null;
         this.ruleSetForGPU = null;
-        this.particlesPerCell = 0;
     }
     
     async initializeDataStructures() {
@@ -43,7 +44,8 @@ export class Rules {
         this.gridDataForGPU = new Float32Array(numberOfParticles * this.gridStride);
         this.gridIndices = new Int16Array(this.gridSize * 2);
         this.ruleSetForGPU = new Int8Array(16);
-        this.particlesPerCell = 0;
+        const particleDataLength = this.particleDataForGPU.length;
+        this.runtime.Kernels = new Kernels(this.runtime, particleDataLength); // Create GPU kernels with proper variables for this simulation
     }
 
     update() {
@@ -54,7 +56,8 @@ export class Rules {
         this.packageAllDataForGPU();
         
         // Send package to GPU
-        const returnData = this.runtime.Kernels.particlePhysics(this.particleDataForGPU);
+        const returnData = this.runtime.Kernels.particlePhysics();
+        // console.log(this.runtime.Kernels.runOutputTest());
 
         // Update particle data
         this.updateParticleData(returnData);
