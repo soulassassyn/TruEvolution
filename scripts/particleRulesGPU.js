@@ -14,9 +14,9 @@ export class Rules {
         this.createdColors = {};
         this.ruleSet = {
             blue: { blue: 0, red: 0, yellow: 0, green: 0 },
-            red: { red: 0, blue: 0, yellow: 0, green: 0 },
-            yellow: { yellow: 0, blue: 0, red: 0, green: 0 },
-            green: { green: 0, blue: 0, red: 0, yellow: 0 },
+            red: { blue: 0, red: 0, yellow: 0, green: 0 },
+            yellow: { blue: 0, red: 0, yellow: 0, green: 0 },
+            green: { blue: 0, red: 0, yellow: 0, green: 0 },
         }
         // Simulation constants
         this.interactionDistance = 150,
@@ -28,9 +28,10 @@ export class Rules {
         this.gridHeight = Math.ceil(this.vheight / this.interactionDistance);
         this.gridSize = this.gridWidth * this.gridHeight;
         this.stride = 5; // Number of variables per particle, used to calculate the location in the flattened particleDataForGPU array
+        this.totalParticles = 0;
         
         // Data structures for GPU
-        this.particleDataForGPU = null;
+        this.particleDataForGPU2D = null;
         this.particleDataFromGPU = null;
         this.gridStartIndices = null;
         this.ruleSetForGPU = null;
@@ -38,21 +39,19 @@ export class Rules {
     }
     
     async initializeDataStructures() {
-        const numberOfParticles = this.particlesArray.length;
-        this.particleDataForGPU = new Float32Array(numberOfParticles * this.stride);
-        this.particleDataForGPU2D = new Array(numberOfParticles);
-        for (let i = 0; i < numberOfParticles; i++) {
+        this.totalParticles = this.particlesArray.length;
+        // this.particleDataForGPU = new Float32Array(this.totalParticles * this.stride);
+        this.particleDataForGPU2D = new Array(this.totalParticles);
+        for (let i = 0; i < this.totalParticles; i++) {
             this.particleDataForGPU2D[i] = new Float32Array(this.stride);
         }
-        console.log(this.particleDataForGPU2D);
-        this.particleDataFromGPU = new Float32Array(numberOfParticles * this.stride);
+        this.particleDataFromGPU = new Float32Array(this.totalParticles * this.stride);
         this.gridIndices = new Int16Array(this.gridSize * 2);
         this.gridIndices2D = new Int16Array(this.gridSize * 2);
         this.ruleSetForGPU = new Int8Array(16);
-        this.simulationConstants = new Float32Array([this.interactionDistance, this.friction, this.interactionDistanceSquared, this.vwidth, this.vheight, this.gridWidth, this.gridHeight, this.gridSize, this.stride]);
-        const particleDataLength = this.particleDataForGPU.length;
-        const particleDataLength2D = this.particleDataForGPU2D.length;
-        this.runtime.Kernels = new Kernels(this.runtime, particleDataLength2D, this.simulationConstants); // Create GPU kernels with proper variables for this simulation
+        const particleDataLength = this.particleDataForGPU2D.length;
+        this.simulationConstants = new Float32Array([this.interactionDistance, this.friction, this.interactionDistanceSquared, this.vwidth, this.vheight, this.gridWidth, this.gridHeight, this.gridSize, this.stride, this.totalParticles]);
+        this.runtime.Kernels = new Kernels(this.runtime, particleDataLength, this.simulationConstants); // Create GPU kernels with proper variables for this simulation
     }
 
     update() {
@@ -97,9 +96,9 @@ export class Rules {
     }
 
     packageAllDataForGPU() {
-        this.packageParticleDataForGPU();
+        // this.packageParticleDataForGPU();
         this.packageParticleDataForGPU2D();
-        this.createGridIndexArrayForGPU();
+        // this.createGridIndexArrayForGPU();
         this.createGridIndexArrayForGPU2D();
     }
 
