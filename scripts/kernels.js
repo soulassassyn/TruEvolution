@@ -1,19 +1,29 @@
 export class Kernels {
-    constructor(runtime, particleDataLength, particleDataLength2D, stride) {
+    constructor(runtime, particleDataLength2D, simulationConstants) {
         this.runtime = runtime;
-        this.stride = stride;
-        this.initializeKernels(particleDataLength2D, stride);
+        this.interactionDistance = simulationConstants[0];
+        this.friction = simulationConstants[1];
+        this.interactionDistanceSquared = simulationConstants[2];
+        this.vwidth = simulationConstants[3];
+        this.vheight = simulationConstants[4];
+        this.gridWidth = simulationConstants[5];
+        this.gridHeight = simulationConstants[6];
+        this.gridSize = simulationConstants[7];
+        this.stride = simulationConstants[8];
+        this.initializeKernels(particleDataLength2D, this.stride);
     }
     
     runOutputTest() {
         const particleData = this.runtime.Rules.particleDataForGPU2D;
+        const gridIndices = this.runtime.Rules.gridIndices2D;
         console.log(particleData);
-        return this.outputTest(particleData, this.stride);
+        console.log(gridIndices);
+        return this.outputTest(particleData, gridIndices, this.stride);
     }
     
     initializeKernels(particleDataLength, stride) {
         // Kernel test environement for debugging
-        this.outputTest = this.runtime.gpu.createKernel(function(particleData, stride) {
+        this.outputTest = this.runtime.gpu.createKernel(function(particleData, gridIndices, stride) {
             const particleIndex = this.thread.x;
             const attributeIndex = this.thread.y;
             const x = particleData[particleIndex][0];
@@ -21,6 +31,8 @@ export class Kernels {
             const vx = particleData[particleIndex][2];
             const vy = particleData[particleIndex][3];
             const color = particleData[particleIndex][4];
+
+
 
             // return particleData[this.thread.y * stride + this.thread.x];
             return particleData[this.thread.y][this.thread.x];

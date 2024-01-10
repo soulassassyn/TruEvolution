@@ -27,14 +27,14 @@ export class Rules {
         this.gridWidth = Math.ceil(this.vwidth / this.interactionDistance);
         this.gridHeight = Math.ceil(this.vheight / this.interactionDistance);
         this.gridSize = this.gridWidth * this.gridHeight;
-        // Data structures for GPU
         this.stride = 5; // Number of variables per particle, used to calculate the location in the flattened particleDataForGPU array
-        this.gridStride = 3; // Number of variables per grid cell, used to calculate the location in the flattened gridDataForGPU array
+        
+        // Data structures for GPU
         this.particleDataForGPU = null;
         this.particleDataFromGPU = null;
         this.gridStartIndices = null;
-        this.gridDataForGPU = null;
         this.ruleSetForGPU = null;
+        this.simulationConstants = null;
     }
     
     async initializeDataStructures() {
@@ -46,13 +46,13 @@ export class Rules {
         }
         console.log(this.particleDataForGPU2D);
         this.particleDataFromGPU = new Float32Array(numberOfParticles * this.stride);
-        this.gridDataForGPU = new Float32Array(numberOfParticles * this.gridStride);
         this.gridIndices = new Int16Array(this.gridSize * 2);
         this.gridIndices2D = new Int16Array(this.gridSize * 2);
         this.ruleSetForGPU = new Int8Array(16);
+        this.simulationConstants = new Float32Array([this.interactionDistance, this.friction, this.interactionDistanceSquared, this.vwidth, this.vheight, this.gridWidth, this.gridHeight, this.gridSize, this.stride]);
         const particleDataLength = this.particleDataForGPU.length;
         const particleDataLength2D = this.particleDataForGPU2D.length;
-        this.runtime.Kernels = new Kernels(this.runtime, particleDataLength, particleDataLength2D, this.stride); // Create GPU kernels with proper variables for this simulation
+        this.runtime.Kernels = new Kernels(this.runtime, particleDataLength2D, this.simulationConstants); // Create GPU kernels with proper variables for this simulation
     }
 
     update() {
@@ -100,6 +100,7 @@ export class Rules {
         this.packageParticleDataForGPU();
         this.packageParticleDataForGPU2D();
         this.createGridIndexArrayForGPU();
+        this.createGridIndexArrayForGPU2D();
     }
 
     // Package particle data in order of which cell they are in according to the grid
