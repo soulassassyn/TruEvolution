@@ -1,22 +1,28 @@
 export class Kernels {
-    constructor(runtime, particleDataLength) {
+    constructor(runtime, particleDataLength, particleDataLength2D, stride) {
         this.runtime = runtime;
-        this.initializeKernels(particleDataLength);
-        this.outputTest();
-
-    }
-
-    outputTest() {
-        this.outputTest = this.runtime.gpu.createKernel(function() {
-            return this.thread.x + this.thread.y;
-        }).setOutput([10, 2]);
-    }
-
-    runOutputTest() {
-        return this.outputTest();
+        this.stride = stride;
+        this.initializeKernels(particleDataLength2D, stride);
     }
     
-    initializeKernels(particleDataLength) {
+    runOutputTest() {
+        const particleData = this.runtime.Rules.particleDataForGPU2D;
+        return this.outputTest(particleData, this.stride);
+    }
+    
+    initializeKernels(particleDataLength, stride) {
+        // Kernel test environement for debugging
+        this.outputTest = this.runtime.gpu.createKernel(function(particleData, stride) {
+            const particleIndex = this.thread.x;
+            const attributeIndex = this.thread.y % stride;
+            const x = particleData[particleIndex][0];
+            const y = particleData[particleIndex][1];
+            const vx = particleData[particleIndex][2];
+            const vy = particleData[particleIndex][3];
+            const color = particleData[particleIndex][4];
+            // return particleData[this.thread.y * stride + this.thread.x];
+        }).setOutput([stride, particleDataLength]);
+
         // Kernel to get particle data
         this.getParticleData = this.runtime.gpu.createKernel(function(particleData, stride, gridSize, gridHeight, gridIndices, ruleSetForGPU) {
             const particleIndex = Math.floor(this.thread.x / stride);
@@ -33,23 +39,22 @@ export class Kernels {
             if (attributeIndex === 1) return (particleData[dataIndex]); // y
             if (attributeIndex === 2) return (particleData[dataIndex]); // vx
             if (attributeIndex === 3) return (particleData[dataIndex]); // vy
-            if (attributeIndex === 4) return (particleData[dataIndex]); // fx 
-            if (attributeIndex === 5) return (particleData[dataIndex]); // fy
-            if (attributeIndex === 6) return (particleData[dataIndex]); // color
+            if (attributeIndex === 4) return (particleData[dataIndex]); // color
 
         }).setOutput([particleDataLength]); 
 
         // Kernel to update particle positions
-        this.calculateForces = this.runtime.gpu.createKernel(function(particleData, gridData, cellParticleCounts, MAX_PARTICLES_PER_CELL) {
+        this.calculateForces = this.runtime.gpu.createKernel(function(particleData, stride, gridData, cellParticleCounts, MAX_PARTICLES_PER_CELL) {
             const particleIndex = this.thread.x;
-            const dataIndex = particleIndex * 7; // Assuming 7 properties per particle
-            const x = particleData[dataIndex];
-            const y = particleData[dataIndex + 1];
+            const baseIndex = particleIndex * stride;
+            const x = particleData[baseIndex];
+            const y = particleData[baseIndex + 1];
             // ... other properties ...
         
             let fx = 0, fy = 0; // Forces to be calculated
         
             // Example: Iterate through nearby grid cells
+            const NUM_NEARBY_CELLS = 9;
             for (let i = 0; i < NUM_NEARBY_CELLS; i++) {
                 const cellIndex = cellIndex; // Determine the cell index
                 const actualParticlesInCell = cellParticleCounts[cellIndex];

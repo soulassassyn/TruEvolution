@@ -28,7 +28,7 @@ export class Rules {
         this.gridHeight = Math.ceil(this.vheight / this.interactionDistance);
         this.gridSize = this.gridWidth * this.gridHeight;
         // Data structures for GPU
-        this.stride = 7; // Number of variables per particle, used to calculate the location in the flattened particleDataForGPU array
+        this.stride = 5; // Number of variables per particle, used to calculate the location in the flattened particleDataForGPU array
         this.gridStride = 3; // Number of variables per grid cell, used to calculate the location in the flattened gridDataForGPU array
         this.particleDataForGPU = null;
         this.particleDataFromGPU = null;
@@ -40,12 +40,20 @@ export class Rules {
     async initializeDataStructures() {
         const numberOfParticles = this.particlesArray.length;
         this.particleDataForGPU = new Float32Array(numberOfParticles * this.stride);
+        this.particleDataForGPU2D = new Array(numberOfParticles);
+        for (let i = 0; i < numberOfParticles; i++) {
+            this.particleDataForGPU2D[i] = new Float32Array(this.stride);
+        }
+        console.log(this.particleDataForGPU2D);
         this.particleDataFromGPU = new Float32Array(numberOfParticles * this.stride);
         this.gridDataForGPU = new Float32Array(numberOfParticles * this.gridStride);
         this.gridIndices = new Int16Array(this.gridSize * 2);
+        this.gridIndices2D = new Int16Array(this.gridSize * 2);
         this.ruleSetForGPU = new Int8Array(16);
         const particleDataLength = this.particleDataForGPU.length;
-        this.runtime.Kernels = new Kernels(this.runtime, particleDataLength); // Create GPU kernels with proper variables for this simulation
+        const particleDataLength2D = this.particleDataForGPU2D.length;
+        console.log(particleDataLength2D);
+        this.runtime.Kernels = new Kernels(this.runtime, particleDataLength, particleDataLength2D, this.stride); // Create GPU kernels with proper variables for this simulation
     }
 
     update() {
@@ -56,11 +64,11 @@ export class Rules {
         this.packageAllDataForGPU();
         
         // Send package to GPU
-        const returnData = this.runtime.Kernels.particlePhysics();
-        // console.log(this.runtime.Kernels.runOutputTest());
+        // const returnData = this.runtime.Kernels.particlePhysics();
+        console.log(this.runtime.Kernels.runOutputTest());
 
         // Update particle data
-        this.updateParticleData(returnData);
+        // this.updateParticleData(returnData);
     }
 
     // Update the grid for spatial hashing
@@ -91,6 +99,7 @@ export class Rules {
 
     packageAllDataForGPU() {
         this.packageParticleDataForGPU();
+        this.packageParticleDataForGPU2D();
         this.createGridIndexArrayForGPU();
     }
 
@@ -108,9 +117,31 @@ export class Rules {
                 this.particleDataForGPU[i * this.stride + 1] = particle.y;
                 this.particleDataForGPU[i * this.stride + 2] = particle.vx;
                 this.particleDataForGPU[i * this.stride + 3] = particle.vy;
-                this.particleDataForGPU[i * this.stride + 4] = particle.fx;
-                this.particleDataForGPU[i * this.stride + 5] = particle.fy;
-                this.particleDataForGPU[i * this.stride + 6] = this.colorToIndex[particle.color];
+                this.particleDataForGPU[i * this.stride + 4] = this.colorToIndex[particle.color];
+                // this.particleDataForGPU[i * this.stride + 4] = particle.fx;
+                // this.particleDataForGPU[i * this.stride + 5] = particle.fy;
+
+                globalIndex++;
+            }
+        });
+    }
+
+    packageParticleDataForGPU2D() {
+        let globalIndex = 0;
+        // Iterate over each grid cell
+        Object.keys(this.grid).forEach((cellIndex) => {
+            const cell = this.grid[cellIndex];
+            // Add each particle's properties to the flattened array
+            for (let currentCellIndex = 0; currentCellIndex < cell.length; currentCellIndex++) {
+                const i = globalIndex;
+                const particle = cell[currentCellIndex];
+                this.particleDataForGPU2D[i][0] = particle.x;
+                this.particleDataForGPU2D[i][1] = particle.y;
+                this.particleDataForGPU2D[i][2] = particle.vx;
+                this.particleDataForGPU2D[i][3] = particle.vy;
+                this.particleDataForGPU2D[i][4] = this.colorToIndex[particle.color];
+                // this.particleDataForGPU2D[i][4] = particle.fx;
+                // this.particleDataForGPU2D[i][5] = particle.fy;
 
                 globalIndex++;
             }
@@ -132,6 +163,24 @@ export class Rules {
             this.gridIndices[cell * 2 + 1] = endIndex;
     
             particleIndex += (this.grid[cell].length * this.stride);
+        }
+    }
+
+    createGridIndexArrayForGPU2D() {
+        // Each cell is represented by two elements (start and end index), hence gridSize * 2
+        let particleIndex = 0;
+
+        // startIndex and endIndex are the indices of the first and last particle in the cell
+        // startIndex is inclusive, endIndex is exclusive
+        for (let cell = 0; cell < this.gridSize; cell++) {
+            const startIndex = particleIndex;
+            const endIndex = startIndex + (this.grid[cell].length);
+
+            // Assign start and end indices for each cell
+            this.gridIndices2D[cell * 2] = startIndex;
+            this.gridIndices2D[cell * 2 + 1] = endIndex;
+
+            particleIndex += (this.grid[cell].length);
         }
     }
 
@@ -159,8 +208,8 @@ export class Rules {
                 particle.y = returnData[i * this.stride + 1];
                 particle.vx = returnData[i * this.stride + 2];
                 particle.vy = returnData[i * this.stride + 3];
-                particle.fx = returnData[i * this.stride + 4];
-                particle.fy = returnData[i * this.stride + 5];
+                // particle.fx = returnData[i * this.stride + 4];
+                // particle.fy = returnData[i * this.stride + 5];
 
                 globalIndex++;
             }
