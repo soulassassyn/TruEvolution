@@ -62,10 +62,6 @@ function Tick(runtime)
 	}
 }
 
-function gpuTest(runtime) {
-	const gpu = runtime.gpu;
-}
-
 function loadScript(runtime, scriptUrl) {
     return new Promise((resolve, reject) => {
         const script = document.createElement("script");
