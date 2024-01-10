@@ -52,6 +52,9 @@ export class Rules {
         const particleDataLength = this.particleDataForGPU2D.length;
         this.simulationConstants = new Float32Array([this.interactionDistance, this.friction, this.interactionDistanceSquared, this.vwidth, this.vheight, this.gridWidth, this.gridHeight, this.gridSize, this.stride, this.totalParticles]);
         this.runtime.Kernels = new Kernels(this.runtime, particleDataLength, this.simulationConstants); // Create GPU kernels with proper variables for this simulation
+        console.log(this.particleDataForGPU2D);
+        console.log(this.gridIndices2D);
+        console.log(this.ruleSetForGPU);
     }
 
     update() {
@@ -62,11 +65,11 @@ export class Rules {
         this.packageAllDataForGPU();
         
         // Send package to GPU
-        // const returnData = this.runtime.Kernels.particlePhysics();
-        console.log(this.runtime.Kernels.runOutputTest());
+        const returnData = this.runtime.Kernels.runOutputTest();
+        // console.log(this.runtime.Kernels.runOutputTest());
 
         // Update particle data
-        // this.updateParticleData(returnData);
+        this.updateParticleData(returnData);
     }
 
     // Update the grid for spatial hashing
@@ -203,16 +206,27 @@ export class Rules {
             for (let currentCellIndex = 0; currentCellIndex < cell.length; currentCellIndex++) {
                 const i = globalIndex;
                 const particle = cell[currentCellIndex];
-                particle.x = returnData[i * this.stride];
-                particle.y = returnData[i * this.stride + 1];
-                particle.vx = returnData[i * this.stride + 2];
-                particle.vy = returnData[i * this.stride + 3];
-                // particle.fx = returnData[i * this.stride + 4];
-                // particle.fy = returnData[i * this.stride + 5];
+                this.cleanData(returnData[i], i);
+                particle.x = returnData[i][0];
+                particle.y = returnData[i][1];
+                particle.vx = returnData[i][2];
+                particle.vy = returnData[i][3];
+                particle.fx = returnData[i][4];
 
                 globalIndex++;
             }
         });
+    }
+
+    cleanData(data, index) {
+        if (!data) return;
+        if (data[0] === data[0]) return;
+        for (let i = 0; i < data.length - 1; i++) {
+            // Check if data is NaN
+            if (data[i] !== data[i]) {
+                data[i] = this.particleDataForGPU2D[index][i];
+            }
+        }
     }
 
     async createAllColors() {

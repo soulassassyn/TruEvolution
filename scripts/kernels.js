@@ -19,9 +19,9 @@ export class Kernels {
         const particleData = this.runtime.Rules.particleDataForGPU2D;
         const gridIndices = this.runtime.Rules.gridIndices2D;
         const ruleSetForGPU = this.runtime.Rules.ruleSetForGPU;
-        console.log(particleData);
-        console.log(gridIndices);
-        console.log(ruleSetForGPU);
+        // console.log(particleData);
+        // console.log(gridIndices);
+        // console.log(ruleSetForGPU);
         return this.outputTest(particleData, gridIndices, this.simulationConstants, ruleSetForGPU);
     }
     
@@ -29,8 +29,8 @@ export class Kernels {
         // Kernel test environement for debugging
         this.outputTest = this.runtime.gpu.createKernel(function(particleData, gridIndices, simulationConstants, ruleSet) {
             const totalParticles = simulationConstants[9];
-            const particleIndex = this.thread.x;
-            const attributeIndex = this.thread.y;
+            const particleIndex = this.thread.y;
+            const attributeIndex = this.thread.x;
             let x = particleData[particleIndex][0];
             let y = particleData[particleIndex][1];
             let vx = particleData[particleIndex][2];
@@ -65,22 +65,44 @@ export class Kernels {
                         // Calculate force components
                         const fx = F * dx;
                         const fy = F * dy;
-                        // Update velocity
-                        vx += fx;
-                        vy += fy;
+                        // Update velocity multiplied by friction
+                        vx = (vx + fx) * simulationConstants[1];
+                        vy = (vy + fy) * simulationConstants[1];
                     }
                 }
             }
-
             x += vx;
             y += vy;
+
+            // Bounce off walls by ensuring particles are within bounds and adjusting velocity
+            if (x <= 0) {
+                // x = -x; // Reflect position from the boundary
+                vx *= -1; // Reverse velocity
+                x += vx;
+            } else if (x >= simulationConstants[3]) {
+                // x = 2 * this.vwidth - x; // Reflect position from the boundary
+                vx *= -1; // Reverse velocity
+                x += vx;
+            }
+            if (y <= 0) {
+                // y = -y; // Reflect position from the boundary
+                vy *= -1; // Reverse velocity
+                y += vy;
+            } else if (y >= simulationConstants[4]) {
+                // y = 2 * this.vheight - y; // Reflect position from the boundary
+                vy *= -1; // Reverse velocity
+                y += vy;
+            }
 
             if (attributeIndex === 0) return x;
             if (attributeIndex === 1) return y;
             if (attributeIndex === 2) return vx;
             if (attributeIndex === 3) return vy;
+            if (attributeIndex === 4) return color;
+
             // return particleData[this.thread.y * stride + this.thread.x];
             // return particleData[this.thread.y][this.thread.x];
+
         }).setOutput([stride, particleDataLength]);
     }
 }
