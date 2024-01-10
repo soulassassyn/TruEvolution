@@ -7,6 +7,7 @@ export class Kernels {
     
     runOutputTest() {
         const particleData = this.runtime.Rules.particleDataForGPU2D;
+        console.log(particleData);
         return this.outputTest(particleData, this.stride);
     }
     
@@ -14,13 +15,15 @@ export class Kernels {
         // Kernel test environement for debugging
         this.outputTest = this.runtime.gpu.createKernel(function(particleData, stride) {
             const particleIndex = this.thread.x;
-            const attributeIndex = this.thread.y % stride;
+            const attributeIndex = this.thread.y;
             const x = particleData[particleIndex][0];
             const y = particleData[particleIndex][1];
             const vx = particleData[particleIndex][2];
             const vy = particleData[particleIndex][3];
             const color = particleData[particleIndex][4];
+
             // return particleData[this.thread.y * stride + this.thread.x];
+            return particleData[this.thread.y][this.thread.x];
         }).setOutput([stride, particleDataLength]);
 
         // Kernel to get particle data

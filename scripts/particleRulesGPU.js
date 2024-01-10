@@ -52,7 +52,6 @@ export class Rules {
         this.ruleSetForGPU = new Int8Array(16);
         const particleDataLength = this.particleDataForGPU.length;
         const particleDataLength2D = this.particleDataForGPU2D.length;
-        console.log(particleDataLength2D);
         this.runtime.Kernels = new Kernels(this.runtime, particleDataLength, particleDataLength2D, this.stride); // Create GPU kernels with proper variables for this simulation
     }
 
