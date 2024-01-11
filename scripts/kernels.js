@@ -34,37 +34,40 @@ export class Kernels {
             let vy = particleData[particleIndex][3];
             const color = particleData[particleIndex][4];
 
-            const particleCell = Math.floor(x / simulationConstants[7]) + (Math.floor(y / simulationConstants[7])) * simulationConstants[6];
+            const particleCell = Math.floor(x / simulationConstants[0]) + (Math.floor(y / simulationConstants[0])) * simulationConstants[6];
 
             for (let xAxis = -1; xAxis <= 1; xAxis++) {
                 for (let yAxis = -1; yAxis <= 1; yAxis++) {
                     const cellToCheck = particleCell + xAxis + (yAxis * simulationConstants[6]);
-                    if (cellToCheck <= 0 && cellToCheck > simulationConstants[7]) break; // Skip if out of bounds
-                    const startIndex = gridIndices[cellToCheck * 2];
-                    const endIndex = gridIndices[cellToCheck * 2 + 1];
-                    const actualParticlesInCell = endIndex - startIndex;
-                    for (let j = 0; j < totalParticles; j++) {
-                        if (j > actualParticlesInCell) break; // Skip if beyond actual particle count
-                        const bIndex = particleData[startIndex + j]; // Particle to check against
-                        const bX = particleData[bIndex][0];
-                        const bY = particleData[bIndex][1];
-                        const bColor = particleData[bIndex][4];
-                        // Calculate distance between particles
-                        const dx = x - bX;
-                        const dy = y - bY;
-                        const dSquared = dx * dx + dy * dy;
-                        const distance = Math.sqrt(dSquared);
-                        if (distance >= simulationConstants[0]) break; // Skip if beyond interaction distance
-                        // Calculate force between particles
-                        const gravityConstant = ruleSet[color * 4 + bColor] / 10; // Retrieve the gravity constant from the ruleSet using color property
-                        const F = gravityConstant / distance; // F (force) is inversely proportional to distance (Newton's law of universal gravitation)
+                    if (cellToCheck >= 0 || cellToCheck < simulationConstants[7]) { // Check if cell is within bounds
+                        const startIndex = gridIndices[cellToCheck * 2];
+                        const endIndex = gridIndices[cellToCheck * 2 + 1];
 
-                        // Calculate force components
-                        const fx = F * dx;
-                        const fy = F * dy;
-                        // Update velocity multiplied by friction
-                        vx = (vx + fx) * simulationConstants[1];
-                        vy = (vy + fy) * simulationConstants[1];
+                        for (let j = 0; j < totalParticles; j++) {
+                            if (j >= startIndex && j < endIndex && j !== particleIndex) { // Check if particle is within bounds and not the same particle
+                                const bIndex = particleData[startIndex + j]; // Particle to check against
+                                const bX = particleData[bIndex][0];
+                                const bY = particleData[bIndex][1];
+                                const bColor = particleData[bIndex][4];
+                                // Calculate distance between particles
+                                const dx = x - bX;
+                                const dy = y - bY;
+                                const dSquared = dx * dx + dy * dy;
+                                const distance = Math.sqrt(dSquared);
+                                return distance;
+                                if (distance <= simulationConstants[0]) { // Check if particles are within interaction distance
+                                    // Calculate force between particles
+                                    const gravityConstant = ruleSet[color * 4 + bColor] / 10; // Retrieve the gravity constant from the ruleSet using color property
+                                    const F = gravityConstant / distance; // F (force) is inversely proportional to distance (Newton's law of universal gravitation)
+                                    // Calculate force components
+                                    const fx = F * dx;
+                                    const fy = F * dy;
+                                    // Update velocity multiplied by friction
+                                    vx += fx * simulationConstants[1];
+                                    vy += fy * simulationConstants[1];
+                                }
+                            }
+                        }
                     }
                 }
             }
