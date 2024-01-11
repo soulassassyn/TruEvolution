@@ -60,10 +60,12 @@ export class Rules {
         
         // Send package to GPU
         const returnData = this.runtime.Kernels.runOutputTest();
-        console.log(returnData);
+        // console.log(returnData);
 
         // Update particle data
         this.updateParticleData(returnData);
+        const trackerParticle = this.runtime.getInstanceByUid(100);
+        console.log(trackerParticle);
     }
 
     // Update the grid for spatial hashing
@@ -158,7 +160,6 @@ export class Rules {
             for (let currentCellIndex = 0; currentCellIndex < cell.length; currentCellIndex++) {
                 const i = globalIndex;
                 const particle = cell[currentCellIndex];
-                this.cleanData(returnData[i], i);
                 particle.x = returnData[i][0];
                 particle.y = returnData[i][1];
                 particle.vx = returnData[i][2];

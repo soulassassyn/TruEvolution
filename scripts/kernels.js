@@ -54,8 +54,22 @@ export class Kernels {
                                 const dy = y - bY;
                                 const dSquared = dx * dx + dy * dy;
                                 const distance = Math.sqrt(dSquared);
-                                return distance;
-                                if (distance <= simulationConstants[0]) { // Check if particles are within interaction distance
+                                if (distance <= simulationConstants[0] && distance > 0) { // Check if particles are within interaction distance
+                                    // Collision detection and resolution
+                                    const minDistance = 2; // Since each particle has a size of 2x2
+                                    // Check for collision
+                                    if (distance < minDistance && distance > 0) {
+                                        // Calculate overlap
+                                        const overlap = 0.5 * (minDistance - distance);
+                                        
+                                        // Calculate the displacement needed for each particle along the line of centers
+                                        const displacementX = overlap * (dx / distance);
+                                        const displacementY = overlap * (dy / distance);
+                                        
+                                        // Adjust positions to resolve collision
+                                        x += displacementX * 2;
+                                        y += displacementY * 2;
+                                    }
                                     // Calculate force between particles
                                     const gravityConstant = ruleSet[color * 4 + bColor] / 10; // Retrieve the gravity constant from the ruleSet using color property
                                     const F = gravityConstant / distance; // F (force) is inversely proportional to distance (Newton's law of universal gravitation)
@@ -76,18 +90,18 @@ export class Kernels {
 
             // Bounce off walls by ensuring particles are within bounds and adjusting velocity
             if (x <= 0) {
+                x = -x; // Reflect position from the boundary
                 vx *= -1; // Reverse velocity
-                x += vx;
             } else if (x >= simulationConstants[3]) {
+                x = 2 * simulationConstants[3] - x; // Reflect position from the boundary
                 vx *= -1; // Reverse velocity
-                x += vx;
             }
             if (y <= 0) {
+                y = -y; // Reflect position from the boundary
                 vy *= -1; // Reverse velocity
-                y += vy;
             } else if (y >= simulationConstants[4]) {
+                y = 2 * simulationConstants[4] - y; // Reflect position from the boundary
                 vy *= -1; // Reverse velocity
-                y += vy;
             }
 
             if (attributeIndex === 0) return x;
