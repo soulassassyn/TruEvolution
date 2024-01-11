@@ -355,7 +355,7 @@
 		],
 		"orientations": "landscape",
 		"webgpu": "auto",
-		"gpuPreference": "high-performance",
+		"gpuPreference": "default",
 		"scriptsType": "module",
 		"framerateMode": "vsync",
 		"compositingMode": "standard",
