@@ -44,7 +44,7 @@ export class Rules {
             this.particleDataForGPU2D[i] = new Float32Array(this.stride);
         }
         this.gridIndices2D = new Int16Array(this.gridSize * 2);
-        this.ruleSetForGPU = new Int8Array(16);
+        this.ruleSetForGPU = new Float32Array(16);
         const particleDataLength = this.particleDataForGPU2D.length;
         this.simulationConstants = new Float32Array([this.interactionDistance, this.friction, this.interactionDistanceSquared, this.vwidth, this.vheight, this.gridWidth, this.gridHeight, this.gridSize, this.stride, this.totalParticles]);
         this.runtime.Kernels = new Kernels(this.runtime, particleDataLength, this.simulationConstants); // Create GPU kernels with proper variables for this simulation
@@ -64,8 +64,8 @@ export class Rules {
 
         // Update particle data
         this.updateParticleData(returnData);
-        const trackerParticle = this.runtime.getInstanceByUid(100);
-        console.log(trackerParticle);
+        // const trackerParticle = this.runtime.getInstanceByUid(100);
+        // console.log(trackerParticle);
     }
 
     // Update the grid for spatial hashing
@@ -144,7 +144,7 @@ export class Rules {
         let index = 0;
         for (let color in this.ruleSet) {
             for (let subColor in this.ruleSet[color]) {
-                this.ruleSetForGPU[index] = this.ruleSet[color][subColor] * 10; // Multiply by 10 to avoid floating point numbers (this.ruleSetForGPU is an Int8Array)
+                this.ruleSetForGPU[index] = this.ruleSet[color][subColor];
                 index++;
             }
         }
@@ -203,10 +203,7 @@ export class Rules {
             particle.id = particle.uid;
             particle.vx = 0; // velocity in x direction
             particle.vy = 0; // velocity in y direction
-            particle.fx = 0; // force in x direction
-            particle.fy = 0; // force in y direction
             particle.color = color;
-            particle.cell = null;
 
             this.particlesArray.push(particle);
         }
@@ -224,6 +221,7 @@ export class Rules {
         this.updateParticleCells();
         console.log("Initial Spatial Hashing complete")
         this.packageAllDataForGPU();
+        console.log(this.ruleSetForGPU);
         console.log("Data packaging for GPU kernel complete");
         console.log("Loading complete");
         this.isSimulating = true;

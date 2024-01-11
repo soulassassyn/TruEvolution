@@ -71,7 +71,7 @@ export class Kernels {
                                         y += displacementY * 2;
                                     }
                                     // Calculate force between particles
-                                    const gravityConstant = ruleSet[color * 4 + bColor] / 10; // Retrieve the gravity constant from the ruleSet using color property
+                                    const gravityConstant = ruleSet[color * 4 + bColor]; // Retrieve the gravity constant from the ruleSet using color property
                                     const F = gravityConstant / distance; // F (force) is inversely proportional to distance (Newton's law of universal gravitation)
                                     // Calculate force components
                                     const fx = F * dx;
