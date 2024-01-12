@@ -58,10 +58,19 @@ export class Rules {
         this.worker2 = new Worker("./workerRule.js");
         this.worker3 = new Worker("./workerRule.js");
         this.worker4 = new Worker("./workerRule.js");
+        this.worker1TotalTime = 0;
+        this.worker2TotalTime = 0;
+        this.worker3TotalTime = 0;
+        this.worker4TotalTime = 0;
     }
 
     update() {
         if (!this.isSimulating) return;
+        const startTime = performance.now();
+        let worker1EndTime, worker1StartTime;
+        let worker2EndTime, worker2StartTime;
+        let worker3EndTime, worker3StartTime;
+        let worker4EndTime, worker4StartTime;
 
         // Update the grid with the current particles
         this.updateGrid(this.particlesArray);
@@ -71,27 +80,79 @@ export class Rules {
         const [ particles1, particles2, particles3, particles4 ] = this.splitParticles(4);
 
         // Post the data to the workers
+        worker1StartTime = performance.now();
         this.worker1.postMessage([ data, particles1 ]);
+        worker2StartTime = performance.now();
         this.worker2.postMessage([ data, particles2 ]);
+        worker3StartTime = performance.now();
         this.worker3.postMessage([ data, particles3 ]);
+        worker4StartTime = performance.now();
         this.worker4.postMessage([ data, particles4 ]);
 
         // Listen for messages from the workers
         this.worker1.onmessage = (e) => {
             const updatedParticles = e.data;
+            worker1EndTime = 0;
             this.workerUpdateParticles(updatedParticles);
+            worker1EndTime = performance.now() - worker1StartTime;
+            this.worker1TotalTime = worker1EndTime;
         }
         this.worker2.onmessage = (e) => {
             const updatedParticles = e.data;
+            worker2EndTime = 0;
             this.workerUpdateParticles(updatedParticles);
+            worker2EndTime = performance.now() - worker2StartTime;
+            this.worker2TotalTime = worker2EndTime;
         }
         this.worker3.onmessage = (e) => {
             const updatedParticles = e.data;
+            worker3EndTime = 0;
             this.workerUpdateParticles(updatedParticles);
+            worker3EndTime = performance.now() - worker3StartTime;
+            this.worker3TotalTime = worker3EndTime;
         }
         this.worker4.onmessage = (e) => {
             const updatedParticles = e.data;
+            worker4EndTime = 0;
             this.workerUpdateParticles(updatedParticles);
+            worker4EndTime = performance.now() - worker4StartTime;
+            this.worker4TotalTime = worker4EndTime;
+        }
+        this.updateTimeText(startTime);
+    }
+
+    updateTimeText(startTime) {
+        let endTime = performance.now();
+        const totalTime = this.worker1TotalTime + this.worker2TotalTime + this.worker3TotalTime + this.worker4TotalTime;
+        endTime += totalTime;
+        const deltaTime = endTime - startTime;
+        const worker1Percent = (this.worker1TotalTime / totalTime) * 100;
+        const worker2Percent = (this.worker2TotalTime / totalTime) * 100;
+        const worker3Percent = (this.worker3TotalTime / totalTime) * 100;
+        const worker4Percent = (this.worker4TotalTime / totalTime) * 100;
+        const UpdateTimeText = this.runtime.objects.UpdateTimeText.getFirstInstance();
+        if (UpdateTimeText) {
+            UpdateTimeText.text = `${deltaTime.toFixed(2)} ms`;
+        }
+        const Worker1TimeText = this.runtime.objects.Worker1TimeText.getFirstInstance();
+        if (Worker1TimeText) {
+            Worker1TimeText.isVisible = true;
+            Worker1TimeText.text = `${this.worker1TotalTime.toFixed(2)} ms (${worker1Percent.toFixed(2)}%)`;
+        }
+        const Worker2TimeText = this.runtime.objects.Worker2TimeText.getFirstInstance();
+        if (Worker2TimeText) {
+            Worker2TimeText.isVisible = true;
+            Worker2TimeText.text = `${this.worker2TotalTime.toFixed(2)} ms (${worker2Percent.toFixed(2)}%)`;
+        }
+        const Worker3TimeText = this.runtime.objects.Worker3TimeText.getFirstInstance();
+        if (Worker3TimeText) {
+            Worker3TimeText.isVisible = true;
+            Worker3TimeText.text = `${this.worker3TotalTime.toFixed(2)} ms (${worker3Percent.toFixed(2)}%)`;
+        }
+        const Worker4TimeText = this.runtime.objects.Worker4TimeText.getFirstInstance();
+        if (Worker4TimeText) {
+            Worker4TimeText.isVisible = true;
+            Worker4TimeText.text = `${this.worker4TotalTime.toFixed(2)} ms (${worker4Percent.toFixed(2)}%)`;
         }
     }
 

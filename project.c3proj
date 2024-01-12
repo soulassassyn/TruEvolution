@@ -117,7 +117,12 @@
 			"copyButton",
 			"Clipboard",
 			"generateButton",
-			"Browser"
+			"Browser",
+			"UpdateTimeText",
+			"Worker1TimeText",
+			"Worker2TimeText",
+			"Worker3TimeText",
+			"Worker4TimeText"
 		],
 		"subfolders": []
 	},

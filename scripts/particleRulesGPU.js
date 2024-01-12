@@ -53,7 +53,7 @@ export class Rules {
 
     update() {
         if (!this.isSimulating) return;
-    
+        const startTime = performance.now();
         // Update the grid with the current particles
         this.updateGridCells();
         this.packageAllDataForGPU();
@@ -69,6 +69,12 @@ export class Rules {
         this.updateParticleData(returnData);
         // const trackerParticle = this.runtime.getInstanceByUid(100);
         // console.log(trackerParticle);
+        const endTime = performance.now();
+        const deltaTime = endTime - startTime;
+        const UpdateTimeText = this.runtime.objects.UpdateTimeText.getFirstInstance();
+        if (UpdateTimeText) {
+            UpdateTimeText.text = `${deltaTime.toFixed(2)} ms`;
+        }
     }
 
     updateCurrentGridSize() {

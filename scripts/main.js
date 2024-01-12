@@ -47,7 +47,7 @@ function Tick(runtime)
 	FPSText.text = String(runtime.fps);
 
 	if (!runtime.Rules.isSimulating && !runtime.Rules.isLoading) {
-		maxParticles(runtime, 800);
+		maxParticles(runtime, 10000);
 		protectFrictionInput(runtime);
 		protectInteractionDistanceInput(runtime);
 		sliderValueUpdate(runtime);
@@ -180,8 +180,8 @@ function protectInteractionDistanceInput(runtime) {
 			if (number < 1) {
 				setting.text = "1";
 			}
-			if (number > 200) {
-				setting.text = "200";
+			if (number > 800) {
+				setting.text = "800";
 			}
 		}
 	});
