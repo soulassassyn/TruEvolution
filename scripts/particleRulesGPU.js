@@ -36,7 +36,7 @@ export class Rules {
         this.simulationConstants = null;
     }
     
-    async initializeDataStructures() {
+    initializeDataStructures() {
         this.totalParticles = this.particlesArray.length;
         // this.particleDataForGPU = new Float32Array(this.totalParticles * this.stride);
         this.particleDataForGPU2D = new Array(this.totalParticles);
@@ -55,12 +55,15 @@ export class Rules {
         if (!this.isSimulating) return;
     
         // Update the grid with the current particles
-        this.updateParticleCells();
+        this.updateGridCells();
         this.packageAllDataForGPU();
-        
+        // console.log("Data packaging for GPU kernel complete");
+
         // Send package to GPU
         const returnData = this.runtime.Kernels.runOutputTest();
+        // this.runtime.Kernels.runOutputTest();
         // console.log(returnData);
+        // console.log("Kernel run complete");
 
         // Update particle data
         this.updateParticleData(returnData);
@@ -68,21 +71,30 @@ export class Rules {
         // console.log(trackerParticle);
     }
 
+    updateCurrentGridSize() {
+        this.vwidth = this.runtime.viewportWidth;
+        this.vheight = this.runtime.viewportHeight;
+        this.gridWidth = Math.ceil(this.vwidth / this.interactionDistance);
+        this.gridHeight = Math.ceil(this.vheight / this.interactionDistance);
+        this.gridSize = this.gridWidth * this.gridHeight;
+    }
+
     // Update the grid for spatial hashing
-    updateParticleCells() {
+    updateGridCells() {
         this.grid = {};
         this.particlesArray.forEach((particle) => {
             const cellX = Math.floor(particle.x / this.interactionDistance);
             const cellY = Math.floor(particle.y / this.interactionDistance);
-            const cell = cellX + (cellY * this.gridHeight);
-            particle.cell = cell;
+            const cell = `${cellX}_${cellY}`;
+
             if (!this.grid[cell]) {
                 this.grid[cell] = [];
             }
             this.grid[cell].push(particle);
         });
 
-        this.fillBlankGridCells();
+        // this.fillBlankGridCells();
+        // console.log(this.grid);
     }
 
     // Fill in blank cells in the grid, this is necesary for correctly mapping indices for the GPU to use later
@@ -104,7 +116,7 @@ export class Rules {
         // Iterate over each grid cell
         Object.keys(this.grid).forEach((cellIndex) => {
             const cell = this.grid[cellIndex];
-            // Add each particle's properties to the flattened array
+            // Add each particle's properties to the 2D array
             for (let currentCellIndex = 0; currentCellIndex < cell.length; currentCellIndex++) {
                 const i = globalIndex;
                 const particle = cell[currentCellIndex];
@@ -113,8 +125,6 @@ export class Rules {
                 this.particleDataForGPU2D[i][2] = particle.vx;
                 this.particleDataForGPU2D[i][3] = particle.vy;
                 this.particleDataForGPU2D[i][4] = this.colorToIndex[particle.color];
-                // this.particleDataForGPU2D[i][4] = particle.fx;
-                // this.particleDataForGPU2D[i][5] = particle.fy;
 
                 globalIndex++;
             }
@@ -127,16 +137,18 @@ export class Rules {
 
         // startIndex and endIndex are the indices of the first and last particle in the cell
         // startIndex is inclusive, endIndex is exclusive
-        for (let cell = 0; cell < this.gridSize; cell++) {
+        Object.keys(this.grid).forEach((cellIndex, index) => {
+            const cell = this.grid[cellIndex];
             const startIndex = particleIndex;
-            const endIndex = startIndex + (this.grid[cell].length);
+            const endIndex = startIndex + (cell.length);
 
             // Assign start and end indices for each cell
-            this.gridIndices2D[cell * 2] = startIndex;
-            this.gridIndices2D[cell * 2 + 1] = endIndex;
+            this.gridIndices2D[index * 2] = startIndex;
+            this.gridIndices2D[index * 2 + 1] = endIndex;
 
-            particleIndex += (this.grid[cell].length);
-        }
+            particleIndex += (cell.length);
+        });
+        // console.log(this.gridIndices2D);
     }
 
     // Only called once at the start of the simulation as the ruleSet doesn't change during the simulation
@@ -164,7 +176,6 @@ export class Rules {
                 particle.y = returnData[i][1];
                 particle.vx = returnData[i][2];
                 particle.vy = returnData[i][3];
-                particle.fx = returnData[i][4];
 
                 globalIndex++;
             }
@@ -182,7 +193,7 @@ export class Rules {
         }
     }
 
-    async createAllColors() {
+    createAllColors() {
         // Iterate over each color stored in createdColors and get the color and number of particles
         for (let color in this.createdColors) {
             let number = this.createdColors[color];
@@ -192,11 +203,9 @@ export class Rules {
     }
     
     create(number, color) {
-        const vwidth = this.runtime.viewportWidth;
-        const vheight = this.runtime.viewportHeight;
         for (let i = 0; i < number; i++) {
-            const x = this.random(vwidth);
-            const y = this.random(vheight);
+            const x = this.random(this.vwidth);
+            const y = this.random(this.vheight);
             const particle = this.runtime.objects.particle.createInstance(this.layer, x, y);
             particle.effects[0].isActive = true;
             particle.effects[0].setParameter(0, this.colorValues[color]);
@@ -213,15 +222,24 @@ export class Rules {
         return Math.random() * number;
     }
     
-    async startSimulation() {
+    startSimulation() {
         this.isLoading = true;
-        await this.createAllColors();
-        await this.initializeDataStructures();
+        this.updateCurrentGridSize();
+        this.createAllColors();
+        this.initializeDataStructures();
         this.packageRuleSetForGPU();
-        this.updateParticleCells();
+        this.updateGridCells();
         console.log("Initial Spatial Hashing complete")
         this.packageAllDataForGPU();
-        console.log(this.ruleSetForGPU);
+        // console.log(this.ruleSetForGPU);
+        // console.log(this.vheight);
+        // console.log(this.vwidth);
+        // console.log(this.gridSize);
+        // console.log(this.gridWidth);
+        // console.log(this.gridHeight);
+        // console.log(this.grid);
+        // console.log(this.gridIndices2D);
+        // console.log(this.particleDataForGPU2D);
         console.log("Data packaging for GPU kernel complete");
         console.log("Loading complete");
         this.isSimulating = true;

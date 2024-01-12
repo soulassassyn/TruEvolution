@@ -25,6 +25,7 @@ export class Kernels {
     initializeKernels(particleDataLength, stride) {
         // Kernel test environement for debugging
         this.outputTest = this.runtime.gpu.createKernel(function(particleData, gridIndices, simulationConstants, ruleSet) {
+            // debugger;
             const totalParticles = simulationConstants[9];
             const particleIndex = this.thread.y;
             const attributeIndex = this.thread.x;
@@ -33,32 +34,37 @@ export class Kernels {
             let vx = particleData[particleIndex][2];
             let vy = particleData[particleIndex][3];
             const color = particleData[particleIndex][4];
-
-            const particleCell = Math.floor(x / simulationConstants[0]) + (Math.floor(y / simulationConstants[0])) * simulationConstants[6];
+            const interactionDistance = simulationConstants[0];
+            const friction = simulationConstants[1];
+            const gridWidth = simulationConstants[5];
+            const gridHeight = simulationConstants[6];
+            const cellX = Math.floor(x / interactionDistance);
+            const cellY = Math.floor(y / interactionDistance);
 
             for (let xAxis = -1; xAxis <= 1; xAxis++) {
                 for (let yAxis = -1; yAxis <= 1; yAxis++) {
-                    const cellToCheck = particleCell + xAxis + (yAxis * simulationConstants[6]);
-                    if (cellToCheck >= 0 || cellToCheck < simulationConstants[7]) { // Check if cell is within bounds
+                    const checkX = cellX + xAxis;
+                    const checkY = cellY + yAxis;
+                    if (checkX >= 0 && checkX < gridHeight && checkY >= 0 && checkY < gridWidth) { // checkX and checkY are within bounds
+                        const cellToCheck = checkY * gridWidth + checkX;
                         const startIndex = gridIndices[cellToCheck * 2];
                         const endIndex = gridIndices[cellToCheck * 2 + 1];
 
-                        for (let j = 0; j < totalParticles; j++) {
+                        for (let j = startIndex; j < totalParticles; j++) {
                             if (j >= startIndex && j < endIndex && j !== particleIndex) { // Check if particle is within bounds and not the same particle
-                                const bIndex = particleData[startIndex + j]; // Particle to check against
-                                const bX = particleData[bIndex][0];
-                                const bY = particleData[bIndex][1];
-                                const bColor = particleData[bIndex][4];
+                                const bX = particleData[j][0];
+                                const bY = particleData[j][1];
+                                const bColor = particleData[j][4];
                                 // Calculate distance between particles
                                 const dx = x - bX;
                                 const dy = y - bY;
                                 const dSquared = dx * dx + dy * dy;
                                 const distance = Math.sqrt(dSquared);
-                                if (distance <= simulationConstants[0] && distance > 0) { // Check if particles are within interaction distance
+                                if (distance > 0 && distance <= interactionDistance) { // Check if particles are within interaction distance
                                     // Collision detection and resolution
                                     const minDistance = 2; // Since each particle has a size of 2x2
                                     // Check for collision
-                                    if (distance < minDistance && distance > 0) {
+                                    if (distance < minDistance) {
                                         // Calculate overlap
                                         const overlap = 0.5 * (minDistance - distance);
                                         
@@ -77,8 +83,8 @@ export class Kernels {
                                     const fx = F * dx;
                                     const fy = F * dy;
                                     // Update velocity multiplied by friction
-                                    vx += fx * simulationConstants[1];
-                                    vy += fy * simulationConstants[1];
+                                    vx += fx * friction;
+                                    vy += fy * friction;
                                 }
                             }
                         }

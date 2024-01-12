@@ -17,6 +17,7 @@ runOnStartup(async runtime =>
 	loadScript(runtime, "./gpu-browser.min.js").then(() => {
 		// console.log(window.GPU);
 		runtime.gpu = new window.GPU.GPU();
+		// runtime.gpu = new window.GPU.GPU({ mode: "cpu" }); // For debugging *** REMOVE FOR PRODUCTION ***
 	}).catch((error) => {
 		console.error("Failed to load the script:", error);
 	});
