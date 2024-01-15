@@ -62,6 +62,8 @@ export class Rules {
         this.worker2TotalTime = 0;
         this.worker3TotalTime = 0;
         this.worker4TotalTime = 0;
+
+        this.logData = "";
     }
 
     update() {
@@ -119,6 +121,38 @@ export class Rules {
             this.worker4TotalTime = worker4EndTime;
         }
         this.updateTimeText(startTime);
+        this.TEMP_PARTICLE_TRACKER();
+    }
+
+    log(message) {
+        this.logData += message;
+        // For console display, you can still use console.log if you wish
+        console.log(message);
+    }
+
+    downloadLog() {
+        const blob = new Blob([this.logData], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'game-log.txt';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    }
+
+    TEMP_PARTICLE_TRACKER() {
+        const particles = this.runtime.objects.particle.getAllInstances();
+        particles.forEach((particle) => {
+            const id = particle.uid;
+            const x = particle.x;
+            const y = particle.y;
+            const vx = particle.vx;
+            const vy = particle.vy;
+            this.log(`id: ${id}, x: ${x}, y: ${y}, vx: ${vx}, vy: ${vy}\n`)
+        });
     }
 
     updateTimeText(startTime) {
@@ -235,6 +269,33 @@ export class Rules {
         }
         this.mapParticles(); // Map the particles to the particleMap for fast lookup later
     }
+
+    TEMP_CREATE_ALL_COLORS() {
+        this.TEMP_CREATE(4, "yellow");
+        this.mapParticles();
+    }
+
+    TEMP_CREATE(number, color) {
+        const startX = 300;
+        const startY = 300;
+        for (let i = 0; i < number; i++) {
+            const x = startX + (i * 100);
+            const y = startY;
+            const particle = this.runtime.objects.particle.createInstance(this.layer, x, y);
+            particle.effects[0].isActive = true;
+            particle.effects[0].setParameter(0, this.colorValues[color]);
+            particle.vx = 0;
+            particle.vy = 0;
+            particle.wx = x; // X variable for the worker
+            particle.wy = y; // Y variable for the worker
+            particle.fx = 0; // force in x direction
+            particle.fy = 0; // force in y direction
+            particle.id = particle.uid;
+            particle.color = color;
+
+            this.particlesArray.push(particle);
+        }
+    }
     
     create(number, color) {
         const vwidth = this.runtime.viewportWidth;
@@ -292,15 +353,19 @@ export class Rules {
     }
     
     startSimulation() {
-        this.createAllColors();
+        // this.createAllColors();
+        this.TEMP_CREATE_ALL_COLORS();
+        this.ruleSet["yellow"]["yellow"] = -0.1;
         this.isSimulating = true;
     }
     
     resetSimulation() {
+        this.downloadLog();
         this.isSimulating = false;
         this.particles = {};
         this.particlesArray = [];
         this.createdColors = {};
+        this.logData = "";
     }
 }
 

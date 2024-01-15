@@ -34,6 +34,9 @@ export class Rules {
         this.gridGridIndices2D = null;
         this.ruleSetForGPU = null;
         this.simulationConstants = null;
+
+        // Logging
+        this.logData = "";
     }
     
     initializeDataStructures() {
@@ -62,7 +65,8 @@ export class Rules {
         // Send package to GPU
         const returnData = this.runtime.Kernels.runOutputTest();
         // this.runtime.Kernels.runOutputTest();
-        // console.log(returnData);
+        console.log(this.gridIndices2D);
+        console.log(returnData);
         // console.log("Kernel run complete");
 
         // Update particle data
@@ -75,6 +79,38 @@ export class Rules {
         if (UpdateTimeText) {
             UpdateTimeText.text = `${deltaTime.toFixed(2)} ms`;
         }
+        // this.TEMP_PARTICLE_TRACKER();
+    }
+
+    log(message) {
+        this.logData += message;
+        // For console display, you can still use console.log if you wish
+        console.log(message);
+    }
+
+    downloadLog() {
+        const blob = new Blob([this.logData], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'game-log.txt';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    }
+
+    TEMP_PARTICLE_TRACKER() {
+        const particles = this.runtime.objects.particle.getAllInstances();
+        particles.forEach((particle) => {
+            const id = particle.uid;
+            const x = particle.x;
+            const y = particle.y;
+            const vx = particle.vx;
+            const vy = particle.vy;
+            this.log(`id: ${id}, x: ${x}, y: ${y}, vx: ${vx}, vy: ${vy}\n`)
+        });
     }
 
     updateCurrentGridSize() {
@@ -199,6 +235,28 @@ export class Rules {
         }
     }
 
+    TEMP_CREATE_ALL_COLORS() {
+        this.TEMP_CREATE(4, "yellow");
+    }
+
+    TEMP_CREATE(number, color) {
+        const startX = 300;
+        const startY = 300;
+        for (let i = 0; i < number; i++) {
+            const x = startX + (i * 100);
+            const y = startY;
+            const particle = this.runtime.objects.particle.createInstance(this.layer, x, y);
+            particle.effects[0].isActive = true;
+            particle.effects[0].setParameter(0, this.colorValues[color]);
+            particle.id = particle.uid;
+            particle.vx = 0;
+            particle.vy = 0;
+            particle.color = color;
+
+            this.particlesArray.push(particle);
+        }
+    }
+
     createAllColors() {
         // Iterate over each color stored in createdColors and get the color and number of particles
         for (let color in this.createdColors) {
@@ -231,7 +289,9 @@ export class Rules {
     startSimulation() {
         this.isLoading = true;
         this.updateCurrentGridSize();
-        this.createAllColors();
+        // this.createAllColors();
+        this.TEMP_CREATE_ALL_COLORS();
+        this.ruleSet["yellow"]["yellow"] = -0.1;
         this.initializeDataStructures();
         this.packageRuleSetForGPU();
         this.updateGridCells();
@@ -254,6 +314,7 @@ export class Rules {
     }
     
     resetSimulation() {
+        // this.downloadLog();
         this.isSimulating = false;
         console.log("Simulation stopped");
         this.particles = {};
@@ -265,6 +326,7 @@ export class Rules {
         this.gridGridIndices2D = null;
         this.ruleSetForGPU = null;
         this.simulationConstants = null;
+        this.logData = "";
         console.log("Data structures reset");
     }
 }

@@ -54,6 +54,7 @@ export class Kernels {
                                 const bX = particleData[j][0];
                                 const bY = particleData[j][1];
                                 const bColor = particleData[j][4];
+
                                 // Calculate distance between particles
                                 const dx = x - bX;
                                 const dy = y - bY;
